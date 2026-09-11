@@ -126,7 +126,7 @@ class CursorAuth {
         }
         const json = JSON.parse(Buffer.from(b64, 'base64').toString('utf-8'));
         if (json.sub) {
-          // sub format: `google-oauth2|user_01KAJ...` or `auth0|user_01...` or `user_01...`
+          // sub format: `google-oauth2|user_xxxx...` or `auth0|user_xxxx...` or `user_xxxx...`
           const match = json.sub.match(/user_[A-Za-z0-9]+/);
           if (match) {
             return match[0];

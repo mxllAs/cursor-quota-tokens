@@ -1,5 +1,27 @@
+# Dependencies
 node_modules/
-.vscode-test/
+
+# Third-party local references (kept locally only)
+references/
+
+# Sensitive Data, Tokens & Keys
+*.env*
+*.key
+*.pem
+*.token
+*.vscdb*
+*.db*
+*.sqlite*
+*cache*.json
+storage.json
+
+# Scratch & Temporary Logs
+scratch/
+temp/
+tmp/
 *.log
+.vscode-test/
+
+# OS Specific
 .DS_Store
 Thumbs.db

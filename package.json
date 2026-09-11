@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/weiyi/cursor-quota-tokens.git"
+    "url": "https://github.com/mxllAs/cursor-quota-tokens.git"
   },
   "engines": {
     "vscode": "^1.80.0"

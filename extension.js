@@ -48,7 +48,7 @@ async function activate(context) {
         title: '设置 Cursor 会话令牌 (Session Token)',
         prompt: '请粘贴您的 WorkosCursorSessionToken Cookie 值或 Cursor accessToken JWT',
         password: true,
-        placeHolder: 'user_01KA...::eyJhbGci...'
+        placeHolder: 'user_xxxx...::eyJhbGci...'
       });
 
       if (input && input.trim()) {
