@@ -159,7 +159,7 @@
       // Bonus spend
       const bSpend = q.bonusSpend || 0;
       if (bonusSpendVal) {
-        bonusSpendVal.textContent = `${formatNumber(bSpend)} 点 · 全额免密抵扣`;
+        bonusSpendVal.textContent = `${formatNumber(bSpend)} 点 · 已全额免密抵扣`;
       }
 
       // Billing Cycle
