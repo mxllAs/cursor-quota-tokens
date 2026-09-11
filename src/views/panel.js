@@ -156,10 +156,15 @@
         queueAlertDesc.textContent = '当前请求享有官方最高优先级高速模型算力响应。';
       }
 
-      // Bonus spend
+      // Bonus spend & remaining
       const bSpend = q.bonusSpend || 0;
+      const bSpendStr = formatTokens(bSpend).replace(/\s+/g, '');
       if (bonusSpendVal) {
-        bonusSpendVal.textContent = `${formatNumber(bSpend)} 点 · 已全额免密抵扣`;
+        if (q.remainingBonus) {
+          bonusSpendVal.textContent = `已抵扣 ${bSpendStr} 点 · 仍有剩余`;
+        } else {
+          bonusSpendVal.textContent = `${bSpendStr} 点已抵扣 · 剩余 0 点 (慢速通道生效)`;
+        }
       }
 
       // Billing Cycle
