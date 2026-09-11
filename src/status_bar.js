@@ -51,7 +51,9 @@ class StatusBarManager {
         break;
       case 'requests_and_tokens':
       default:
-        label = `⚡ ${remaining}/${limit} | ${todayTokensStr} tok`;
+        label = remaining <= 0 
+          ? `⚡ 0/${limit} (慢速) | ${todayTokensStr} tok`
+          : `⚡ ${remaining}/${limit} | ${todayTokensStr} tok`;
         break;
     }
 
@@ -76,18 +78,26 @@ class StatusBarManager {
     md.appendMarkdown(`### **⚡ Cursor 额度与 Token 统计**\n\n`);
     md.appendMarkdown(`👤 **账户**: ${data.profile?.name || 'Cursor 用户'} (${membership} 会员)\n\n`);
     md.appendMarkdown(`---\n\n`);
-    md.appendMarkdown(`⚡ **快速请求配额**: **${used.toLocaleString()}** / **${limit.toLocaleString()}** (已用 ${percentUsed}%)\n\n`);
-    md.appendMarkdown(`🟢 **剩余可用次数**: **${remaining.toLocaleString()}** 次\n\n`);
+
+    if (remaining <= 0) {
+      md.appendMarkdown(`🐢 **当前模式**: **慢速队列模式** (高速配额已耗尽，请求免费排队)\n\n`);
+    } else {
+      md.appendMarkdown(`🚀 **当前模式**: **高速模式** (剩余 ${remaining.toLocaleString()} 次快速请求)\n\n`);
+    }
+
+    md.appendMarkdown(`🔹 **Cursor Models (含 Grok & Composer)**: **${data.quota.autoPercentUsed || 100}% used**\n\n`);
+    md.appendMarkdown(`🔹 **Other Models (Claude 3.5 / GPT-4o 等)**: **${data.quota.apiPercentUsed || 100}% used**\n\n`);
+    md.appendMarkdown(`⚡ **快速请求总配额**: **${used.toLocaleString()}** / **${limit.toLocaleString()}** (已用 ${percentUsed}%)\n\n`);
     if (data.quota.billingCycleEnd) {
       md.appendMarkdown(`⏳ **重置倒计时**: **${daysUntilReset} 天后重置** (${data.quota.billingCycleEnd})\n\n`);
     }
     if (data.sandUsage && data.sandUsage.usagePercent > 0) {
-      md.appendMarkdown(`🤖 **每周配额 (Grok/思维)**: 已用 ${data.sandUsage.usagePercent}%\n\n`);
+      md.appendMarkdown(`🤖 **每周配额 (Grok/思维)**: 已用 ${data.sandUsage.usagePercent}% (周重置)\n\n`);
     }
     md.appendMarkdown(`---\n\n`);
-    md.appendMarkdown(`📊 **今日消耗 Token**: **${todayTokens.toLocaleString()}**\n\n`);
+    md.appendMarkdown(`📊 **今日实际消耗 Token**: **${todayTokens.toLocaleString()}**\n\n`);
     if (data.tokens?.today?.costCents > 0) {
-      md.appendMarkdown(`💰 **今日估算费用**: **$${(data.tokens.today.costCents / 100).toFixed(2)}**\n\n`);
+      md.appendMarkdown(`💰 **今日估算价值**: **$${(data.tokens.today.costCents / 100).toFixed(2)}**\n\n`);
     }
     md.appendMarkdown(`---\n\n`);
     md.appendMarkdown(`[👉 点击打开 Cursor 用量大盘](command:cursorQuota.openDashboard)`);

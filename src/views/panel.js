@@ -15,6 +15,13 @@
   const quotaLimit = document.getElementById('quotaLimit');
   const quotaPercentBadge = document.getElementById('quotaPercentBadge');
 
+  const cursorModelPct = document.getElementById('cursorModelPct');
+  const cursorModelBar = document.getElementById('cursorModelBar');
+  const otherModelPct = document.getElementById('otherModelPct');
+  const otherModelBar = document.getElementById('otherModelBar');
+  const queueStatusBanner = document.getElementById('queueStatusBanner');
+  const queueStatusText = document.getElementById('queueStatusText');
+
   const daysCount = document.getElementById('daysCount');
   const daysResetPill = document.getElementById('daysResetPill');
   const cycleProgress = document.getElementById('cycleProgress');
@@ -117,6 +124,30 @@
         gaugeRing.style.stroke = 'var(--accent-orange)';
       } else {
         gaugeRing.style.stroke = 'var(--accent-blue)';
+      }
+
+      // Official sub-bars (Cursor Models & Other Models)
+      const autoPct = data.quota.autoPercentUsed !== undefined ? data.quota.autoPercentUsed : percentUsed;
+      const apiPct = data.quota.apiPercentUsed !== undefined ? data.quota.apiPercentUsed : percentUsed;
+
+      if (cursorModelPct && cursorModelBar) {
+        cursorModelPct.textContent = `${autoPct}% used`;
+        cursorModelBar.style.width = `${Math.min(100, autoPct)}%`;
+      }
+      if (otherModelPct && otherModelBar) {
+        otherModelPct.textContent = `${apiPct}% used`;
+        otherModelBar.style.width = `${Math.min(100, apiPct)}%`;
+      }
+      if (queueStatusBanner && queueStatusText) {
+        if (remaining <= 0) {
+          queueStatusBanner.className = 'queue-status-banner';
+          queueStatusBanner.querySelector('.queue-icon').textContent = '🐢';
+          queueStatusText.textContent = '高速配额已用完 · 当前自动使用慢速队列 (Slow Queue)';
+        } else {
+          queueStatusBanner.className = 'queue-status-banner fast';
+          queueStatusBanner.querySelector('.queue-icon').textContent = '⚡';
+          queueStatusText.textContent = `高速可用模式 · 剩余 ${remaining.toLocaleString()} 次快速请求`;
+        }
       }
 
       // Billing cycle

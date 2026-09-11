@@ -51,7 +51,7 @@
             </svg>
             <div class="gauge-content">
               <span id="gaugeValue" class="gauge-value">--</span>
-              <span class="gauge-sub">剩余可用</span>
+              <span class="gauge-sub">剩余快速请求</span>
             </div>
           </div>
           <div class="gauge-meta">
@@ -63,6 +63,31 @@
               <span class="meta-label">计划上限</span>
               <span id="quotaLimit" class="meta-val">--</span>
             </div>
+          </div>
+        </div>
+        <!-- 官方细分模型进度条 (1:1 匹配官方设置) -->
+        <div class="official-sub-bars">
+          <div class="sub-bar-item">
+            <div class="sub-bar-title-row">
+              <span class="sub-bar-title">Cursor Models · 含 Grok 与 Composer</span>
+              <span id="cursorModelPct" class="sub-bar-pct">100% used</span>
+            </div>
+            <div class="sub-progress-bg">
+              <div id="cursorModelBar" class="sub-progress-fill fill-blue" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="sub-bar-item">
+            <div class="sub-bar-title-row">
+              <span class="sub-bar-title">Other Models · Claude 3.5 / GPT-4o 等</span>
+              <span id="otherModelPct" class="sub-bar-pct">100% used</span>
+            </div>
+            <div class="sub-progress-bg">
+              <div id="otherModelBar" class="sub-progress-fill fill-slate" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div id="queueStatusBanner" class="queue-status-banner">
+            <span class="queue-icon">🐢</span>
+            <span id="queueStatusText" class="queue-text">高速配额已用完 · 当前自动使用慢速队列</span>
           </div>
         </div>
       </div>
@@ -134,6 +159,7 @@
             <span class="date-sub">类型: 额外高阶额度</span>
             <span id="sandResetDate" class="date-sub">重置: 每周自动刷新</span>
           </div>
+          <div class="sand-note">ℹ️ 专项周额度受主月度订阅约束，月额度耗尽且未开按量计费时普通会话走慢速队列</div>
         </div>
       </div>
     </div>

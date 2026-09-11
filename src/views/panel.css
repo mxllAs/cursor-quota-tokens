@@ -292,6 +292,90 @@ body {
   color: var(--text-primary);
 }
 
+/* Official Sub Bars (Cursor Models vs Other Models) */
+.official-sub-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sub-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sub-bar-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.sub-bar-title {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sub-bar-pct {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.sub-progress-bg {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.sub-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+.fill-blue {
+  background: linear-gradient(90deg, #38bdf8, #2563eb);
+}
+
+.fill-slate {
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+}
+
+.queue-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  font-size: 10.5px;
+  color: #f87171;
+}
+
+.queue-status-banner.fast {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.queue-icon {
+  font-size: 12px;
+}
+
+.queue-text {
+  line-height: 1.3;
+}
+
+
 /* Cycle Card */
 .countdown-hero {
   display: flex;
@@ -522,6 +606,16 @@ body {
   width: 9px;
   height: 9px;
   border-radius: 2px;
+}
+
+.sand-note {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  line-height: 1.35;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 6px;
+  border-radius: 4px;
 }
 
 .heatmap-tooltip {
