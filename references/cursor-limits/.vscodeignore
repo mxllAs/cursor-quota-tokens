@@ -1,0 +1,6 @@
+.vscode/**
+.vscode-test/**
+.git/**
+**/*.map
+.cursor/**
+**/.DS_Store

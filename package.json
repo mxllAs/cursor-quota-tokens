@@ -1,0 +1,117 @@
+{
+  "name": "cursor-quota-tokens",
+  "displayName": "Cursor Quota & Tokens Tracker",
+  "description": "Real-time tracking of Cursor fast requests, plan quota, Grok/Sand weekly allowance, reset countdown, and detailed token consumption per model with GitHub-style activity heatmap.",
+  "version": "1.0.0",
+  "publisher": "weiyi",
+  "icon": "images/icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/weiyi/cursor-quota-tokens.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "cursor",
+    "quota",
+    "tokens",
+    "usage",
+    "tracker",
+    "claude",
+    "gpt-4"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cursor-quota-tokens-view",
+          "title": "Cursor Quota",
+          "icon": "images/statusbar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "cursor-quota-tokens-view": [
+        {
+          "type": "webview",
+          "id": "cursorQuota.dashboard",
+          "name": "Cursor Usage & Quota"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "cursorQuota.refresh",
+        "title": "Refresh Cursor Quota & Tokens",
+        "category": "Cursor Quota",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cursorQuota.openDashboard",
+        "title": "Open Cursor Usage Dashboard",
+        "category": "Cursor Quota",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "cursorQuota.setToken",
+        "title": "Set Cursor Session Token Manually",
+        "category": "Cursor Quota"
+      },
+      {
+        "command": "cursorQuota.clearToken",
+        "title": "Clear Stored Cursor Token",
+        "category": "Cursor Quota"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cursorQuota.refresh",
+          "when": "view == cursorQuota.dashboard",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Cursor Quota & Tokens Tracker",
+      "properties": {
+        "cursorQuota.refreshInterval": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Automatic refresh interval in minutes."
+        },
+        "cursorQuota.statusBarFormat": {
+          "type": "string",
+          "enum": [
+            "requests_and_tokens",
+            "requests_only",
+            "percent_only",
+            "tokens_only"
+          ],
+          "default": "requests_and_tokens",
+          "description": "Information format displayed in the status bar."
+        },
+        "cursorQuota.lowQuotaThreshold": {
+          "type": "number",
+          "default": 15,
+          "description": "Warning threshold for remaining quota percentage."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "package": "vsce package --no-dependencies"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "targets": [
+    {
+      "platform": "open-vsx",
+      "namespace": "naumanmoazzam",
+      "extension": "cursor-limits",
+      "url": "https://open-vsx.org/extension/naumanmoazzam/cursor-limits",
+      "reviewsUrl": "https://open-vsx.org/extension/naumanmoazzam/cursor-limits/reviews",
+      "status": "published"
+    }
+  ]
+}

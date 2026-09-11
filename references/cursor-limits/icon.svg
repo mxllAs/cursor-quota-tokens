@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Cursor Limits icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F1412"/>
+      <stop offset="100%" stop-color="#1B2621"/>
+    </linearGradient>
+    <linearGradient id="ringUsage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#B7C8B1"/>
+      <stop offset="70%" stop-color="#8FA88B"/>
+      <stop offset="100%" stop-color="#F4F7F2"/>
+    </linearGradient>
+    <radialGradient id="innerGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#33463B"/>
+      <stop offset="100%" stop-color="#141B17"/>
+    </radialGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="18" y="18" width="476" height="476" rx="96" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="96" fill="none" stroke="#DDE8D8" stroke-opacity="0.18" stroke-width="3"/>
+
+  <circle cx="256" cy="256" r="154" fill="none" stroke="#839983" stroke-opacity="0.34" stroke-width="28"/>
+  <path d="M 128 256 A 128 128 0 1 1 378 296" fill="none" stroke="url(#ringUsage)" stroke-width="26" stroke-linecap="round" filter="url(#softGlow)"/>
+
+  <circle cx="256" cy="256" r="104" fill="url(#innerGlow)" stroke="#DDE8D8" stroke-opacity="0.36" stroke-width="2"/>
+
+  <line x1="256" y1="256" x2="334" y2="220" stroke="#EAF1E6" stroke-width="10" stroke-linecap="round" filter="url(#softGlow)"/>
+  <circle cx="256" cy="256" r="12" fill="#FFFFFF"/>
+
+  <path d="M 188 208 L 152 256 L 188 304" fill="none" stroke="#F3F7F1" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 324 208 L 360 256 L 324 304" fill="none" stroke="#F3F7F1" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g opacity="0.85">
+    <line x1="256" y1="84" x2="256" y2="112" stroke="#AEC1A8" stroke-width="6" stroke-linecap="round"/>
+    <line x1="333" y1="102" x2="321" y2="128" stroke="#AEC1A8" stroke-width="6" stroke-linecap="round"/>
+    <line x1="391" y1="154" x2="369" y2="172" stroke="#AEC1A8" stroke-width="6" stroke-linecap="round"/>
+    <line x1="425" y1="228" x2="397" y2="232" stroke="#AEC1A8" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

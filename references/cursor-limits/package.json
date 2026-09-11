@@ -1,0 +1,51 @@
+{
+  "name": "cursor-limits",
+  "displayName": "Cursor Limits",
+  "publisher": "naumanmoazzam",
+  "description": "Show Cursor fast/slow limits in the status bar",
+  "version": "0.0.5",
+  "icon": "icon.png",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorStatusline.openDashboard",
+        "title": "Cursor: Open Usage Panel"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vsix": "vsce package --allow-star-activation"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/sql.js": "^1.4.11",
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NaumanMoazzam/cursor-limits.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NaumanMoazzam/cursor-limits/issues"
+  },
+  "homepage": "https://github.com/NaumanMoazzam/cursor-limits#readme",
+  "dependencies": {
+    "sql.js": "^1.14.1"
+  }
+}

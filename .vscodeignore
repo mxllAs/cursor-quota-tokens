@@ -1,0 +1,9 @@
+.vscode/**
+.vscode-test/**
+references/**
+images/generate_icon.py
+releases/**
+.git/**
+.gitignore
+scratch/**
+**/*.log

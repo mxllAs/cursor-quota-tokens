@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cursor Quota & Tokens</title>
+  <link rel="stylesheet" href="{{cssUri}}">
+</head>
+<body>
+  <div id="app" class="dashboard-container">
+    <!-- Header Section -->
+    <header class="dashboard-header">
+      <div class="user-profile">
+        <div class="avatar-wrapper">
+          <img id="userAvatar" src="" alt="Avatar" class="user-avatar" style="display: none;">
+          <div id="avatarFallback" class="avatar-fallback">C</div>
+          <span id="badgePro" class="membership-badge">PRO</span>
+        </div>
+        <div class="user-meta">
+          <div class="user-name-row">
+            <h2 id="userName" class="user-name">Loading...</h2>
+            <span id="userTier" class="tier-pill">Active</span>
+          </div>
+          <p id="userEmail" class="user-email">Detecting account...</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnRefresh" class="action-btn" title="Refresh data">
+          <svg class="icon-refresh" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Quota & Metrics Cards -->
+    <div class="metrics-grid">
+      <!-- Fast Requests Card -->
+      <div class="glass-card quota-card">
+        <div class="card-header">
+          <span class="card-title">Fast Requests (Pro)</span>
+          <span id="quotaPercentBadge" class="card-badge">--%</span>
+        </div>
+        <div class="card-body gauge-body">
+          <div class="gauge-container">
+            <svg class="progress-ring" width="100" height="100">
+              <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+              <circle id="gaugeRing" class="progress-ring-fill" stroke="#38bdf8" stroke-width="8" stroke-dasharray="251.32" stroke-dashoffset="0" stroke-linecap="round" fill="transparent" r="40" cx="50" cy="50"/>
+            </svg>
+            <div class="gauge-content">
+              <span id="gaugeValue" class="gauge-value">--</span>
+              <span class="gauge-sub">remaining</span>
+            </div>
+          </div>
+          <div class="gauge-meta">
+            <div class="meta-item">
+              <span class="meta-label">Used</span>
+              <span id="quotaUsed" class="meta-val">--</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Limit</span>
+              <span id="quotaLimit" class="meta-val">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Cycle & Reset Card -->
+      <div class="glass-card cycle-card">
+        <div class="card-header">
+          <span class="card-title">Billing Cycle</span>
+          <span id="daysResetPill" class="card-badge badge-blue">-- Days</span>
+        </div>
+        <div class="card-body">
+          <div class="countdown-hero">
+            <span id="daysCount" class="countdown-number">--</span>
+            <span class="countdown-unit">days left until reset</span>
+          </div>
+          <div class="progress-bar-container">
+            <div id="cycleProgress" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <div class="date-range-row">
+            <span id="cycleStart" class="date-sub">Start: --</span>
+            <span id="cycleEnd" class="date-sub">Reset: --</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's Activity Card -->
+      <div class="glass-card today-card">
+        <div class="card-header">
+          <span class="card-title">Today's Consumption</span>
+          <span id="todayCostBadge" class="card-badge badge-green">$0.00</span>
+        </div>
+        <div class="card-body">
+          <div class="today-token-hero">
+            <span id="todayTokens" class="hero-token-val">0</span>
+            <span class="hero-token-lbl">total tokens</span>
+          </div>
+          <div class="token-trio">
+            <div class="trio-item">
+              <span class="trio-lbl">Input</span>
+              <span id="todayInput" class="trio-val">0</span>
+            </div>
+            <div class="trio-item">
+              <span class="trio-lbl">Output</span>
+              <span id="todayOutput" class="trio-val">0</span>
+            </div>
+            <div class="trio-item">
+              <span class="trio-lbl">Cache Read</span>
+              <span id="todayCache" class="trio-val">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Quota Card -->
+      <div class="glass-card sand-card" id="sandCard">
+        <div class="card-header">
+          <span class="card-title">Weekly Allowance</span>
+          <span id="sandPercentBadge" class="card-badge badge-purple">--%</span>
+        </div>
+        <div class="card-body">
+          <div class="sand-hero">
+            <span id="sandUsedVal" class="hero-token-val">--%</span>
+            <span class="hero-token-lbl">weekly limit used</span>
+          </div>
+          <div class="progress-bar-container">
+            <div id="sandProgress" class="progress-bar-fill fill-purple" style="width: 0%;"></div>
+          </div>
+          <div class="date-range-row">
+            <span class="date-sub">Type: Grok / Thinking</span>
+            <span id="sandResetDate" class="date-sub">Resets: Weekly</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Models Breakdown Section -->
+    <div class="glass-card section-card">
+      <div class="card-header">
+        <span class="card-title">Model Usage Breakdown</span>
+        <span id="totalEventsCount" class="card-sub-info">0 calls</span>
+      </div>
+      <div class="card-body models-body">
+        <div class="donut-wrapper">
+          <svg id="donutSvg" class="donut-chart" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="38" fill="transparent" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+          </svg>
+        </div>
+        <div id="modelsList" class="models-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- GitHub-Style Activity Heatmap -->
+    <div class="glass-card section-card">
+      <div class="card-header">
+        <div class="header-left">
+          <span class="card-title">Activity Heatmap</span>
+          <span class="card-sub-info">Past 90 Days</span>
+        </div>
+        <div class="heatmap-legend">
+          <span class="legend-text">Less</span>
+          <div class="legend-cell lvl-0"></div>
+          <div class="legend-cell lvl-1"></div>
+          <div class="legend-cell lvl-2"></div>
+          <div class="legend-cell lvl-3"></div>
+          <div class="legend-cell lvl-4"></div>
+          <span class="legend-text">More</span>
+        </div>
+      </div>
+      <div class="card-body heatmap-body">
+        <div class="heatmap-scroll-container">
+          <div id="heatmapGrid" class="heatmap-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div id="heatmapTooltip" class="heatmap-tooltip" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Recent Usage Events Log -->
+    <div class="glass-card section-card">
+      <div class="card-header">
+        <span class="card-title">Recent Prompt Events</span>
+        <span class="card-sub-info">Latest 30 requests</span>
+      </div>
+      <div class="card-body table-body">
+        <div class="table-responsive">
+          <table class="events-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Model</th>
+                <th>Tokens</th>
+                <th>Cache</th>
+                <th>Est. Cost</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTbody">
+              <tr>
+                <td colspan="5" class="empty-state">Loading events...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{jsUri}}"></script>
+</body>
+</html>

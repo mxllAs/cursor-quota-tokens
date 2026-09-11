@@ -1,0 +1,17 @@
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+.venv/**
+test-*.js
+
+# Include only sql-asm.js (pure JavaScript, no WASM)
+node_modules/**
+!node_modules/sql.js/dist/sql-asm.js
+!node_modules/sql.js/package.json
