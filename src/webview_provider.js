@@ -149,7 +149,10 @@ class WebviewProvider {
 
     let html = fs.readFileSync(htmlPath, 'utf-8');
     html = html.replace('{{cssUri}}', cssUri.toString());
+    html = html.replace('<link rel="stylesheet" href="./panel.css">', `<link rel="stylesheet" href="${cssUri}">`);
+
     html = html.replace('{{jsUri}}', jsUri.toString());
+    html = html.replace('<script src="./panel.js"></script>', `<script src="${jsUri}"></script>`);
 
     return html;
   }
