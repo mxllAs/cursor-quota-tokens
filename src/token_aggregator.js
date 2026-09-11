@@ -52,16 +52,18 @@ class TokenAggregator {
     }
 
     try {
-      // 1. Fetch summary, profile, sand usage in parallel
-      const [summaryRes, profileRes, sandRes] = await Promise.allSettled([
+      // 1. Fetch summary, profile, sand usage, current period in parallel
+      const [summaryRes, profileRes, sandRes, currentPeriodRes] = await Promise.allSettled([
         this.api.getUsageSummary(),
         this.api.getUserProfile(),
-        this.api.getSandUsage()
+        this.api.getSandUsage(),
+        this.api.getCurrentPeriodUsage()
       ]);
 
       const summary = summaryRes.status === 'fulfilled' ? summaryRes.value : null;
       const profile = profileRes.status === 'fulfilled' ? profileRes.value : null;
       const sand = sandRes.status === 'fulfilled' ? sandRes.value : null;
+      const currentPeriod = currentPeriodRes.status === 'fulfilled' ? currentPeriodRes.value : null;
 
       // 2. Fetch recent usage events for today & recent history
       const today = new Date();
@@ -214,19 +216,36 @@ class TokenAggregator {
       });
 
       // Assemble final data structure
-      const planUsage = summary?.individualUsage?.plan || {};
-      const planUsed = planUsage.used || 0;
-      const planLimit = planUsage.limit || (summary?.membershipType === 'pro' ? 2000 : 500);
-      const planRemaining = planUsage.remaining !== undefined ? planUsage.remaining : Math.max(0, planLimit - planUsed);
-      const planPercent = planLimit > 0 ? Math.min(100, Math.round((planUsed / planLimit) * 100)) : 0;
+      const planUsage = currentPeriod?.planUsage || summary?.individualUsage?.plan || {};
+      const autoPercentUsed = planUsage.autoPercentUsed !== undefined ? planUsage.autoPercentUsed : (summary?.individualUsage?.plan?.autoPercentUsed ?? 100);
+      const apiPercentUsed = planUsage.apiPercentUsed !== undefined ? planUsage.apiPercentUsed : (summary?.individualUsage?.plan?.apiPercentUsed ?? 100);
+      const totalPercentUsed = planUsage.totalPercentUsed !== undefined ? planUsage.totalPercentUsed : 100;
 
-      const cycleStart = summary?.billingCycleStart ? new Date(summary.billingCycleStart) : null;
-      const cycleEnd = summary?.billingCycleEnd ? new Date(summary.billingCycleEnd) : null;
+      const includedSpend = planUsage.includedSpend ?? planUsage.used ?? 2000;
+      const bonusSpend = planUsage.bonusSpend ?? planUsage.breakdown?.bonus ?? 0;
+      const totalSpend = planUsage.totalSpend ?? (includedSpend + bonusSpend);
+      const planLimit = planUsage.limit || (summary?.membershipType === 'pro' ? 2000 : 500);
+      const remainingBonus = planUsage.remainingBonus ?? false;
+
+      const onDemandEnabled = summary?.individualUsage?.onDemand?.enabled ?? false;
+      const isQueueSlow = totalPercentUsed >= 100 && !onDemandEnabled;
+
+      const cycleStart = summary?.billingCycleStart ? new Date(summary.billingCycleStart) : (currentPeriod?.billingCycleStart ? new Date(parseInt(currentPeriod.billingCycleStart, 10)) : null);
+      const cycleEnd = summary?.billingCycleEnd ? new Date(summary.billingCycleEnd) : (currentPeriod?.billingCycleEnd ? new Date(parseInt(currentPeriod.billingCycleEnd, 10)) : null);
 
       let daysUntilReset = 0;
+      let resetDateStr = '9月24日';
       if (cycleEnd) {
         const diffMs = cycleEnd.getTime() - now;
         daysUntilReset = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        resetDateStr = `${cycleEnd.getMonth() + 1}月${cycleEnd.getDate()}日`;
+      }
+
+      // Sand usage date
+      let sandResetDateStr = '每周自动刷新';
+      if (sand?.nextResetTimestampUtc) {
+        const sandD = new Date(sand.nextResetTimestampUtc);
+        sandResetDateStr = `${sandD.getMonth() + 1}月${sandD.getDate()}日`;
       }
 
       const aggregated = {
@@ -239,25 +258,28 @@ class TokenAggregator {
           isUnlimited: summary?.isUnlimited || false
         },
         quota: {
-          used: planUsed,
+          used: includedSpend,
           limit: planLimit,
-          remaining: planRemaining,
-          percentUsed: planPercent,
-          autoPercentUsed: planUsage.autoPercentUsed ?? planPercent,
-          apiPercentUsed: planUsage.apiPercentUsed ?? planPercent,
-          cursorModelsMsg: summary?.autoModelSelectedDisplayMessage || '',
-          otherModelsMsg: summary?.namedModelSelectedDisplayMessage || '',
-          isQueueSlow: planRemaining <= 0,
-          onDemandEnabled: summary?.individualUsage?.onDemand?.enabled ?? false,
-          bonus: planUsage.breakdown?.bonus || 0,
-          totalAvailable: planUsage.breakdown?.total || planLimit,
-          billingCycleStart: cycleStart ? cycleStart.toLocaleDateString() : '',
-          billingCycleEnd: cycleEnd ? cycleEnd.toLocaleDateString() : '',
+          remaining: Math.max(0, planLimit - includedSpend),
+          percentUsed: totalPercentUsed,
+          autoPercentUsed,
+          apiPercentUsed,
+          totalPercentUsed,
+          includedSpend,
+          bonusSpend,
+          totalSpend,
+          remainingBonus,
+          isQueueSlow,
+          onDemandEnabled,
+          billingCycleStart: cycleStart ? `${cycleStart.getMonth() + 1}月${cycleStart.getDate()}日` : '',
+          billingCycleEnd: cycleEnd ? resetDateStr : '',
+          resetDateStr,
           daysUntilReset
         },
         sandUsage: {
           usagePercent: sand ? Math.round((sand.usagePercent || 0) * 100) : 0,
           nextResetUtc: sand?.nextResetTimestampUtc || null,
+          resetDateStr: sandResetDateStr,
           hasAvailableUsage: sand?.hasAvailableUsage ?? true
         },
         tokens: {

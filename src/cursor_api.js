@@ -97,6 +97,13 @@ class CursorApi {
   }
 
   /**
+   * Fetch detailed current period plan usage & spend limits
+   */
+  async getCurrentPeriodUsage() {
+    return this.request('POST', '/dashboard/get-current-period-usage', {});
+  }
+
+  /**
    * Fetch weekly Grok / Sand usage status & countdown
    */
   async getSandUsage() {

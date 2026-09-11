@@ -41,28 +41,28 @@ class StatusBarManager {
     let label = '';
     switch (format) {
       case 'requests_only':
-        label = `⚡ ${remaining}/${limit}`;
+        label = remaining <= 0 ? `🐢 慢速队列` : `⚡ ${remaining}/${limit}`;
         break;
       case 'percent_only':
-        label = `⚡ 余 ${Math.max(0, 100 - percentUsed)}%`;
+        label = remaining <= 0 ? `🐢 慢速` : `⚡ 余 ${Math.max(0, 100 - percentUsed)}%`;
         break;
       case 'tokens_only':
-        label = `⚡ ${todayTokensStr} Token`;
+        label = `⚡ ${todayTokensStr} tok`;
         break;
       case 'requests_and_tokens':
       default:
         label = remaining <= 0 
-          ? `⚡ 0/${limit} (慢速) | ${todayTokensStr} tok`
+          ? `🐢 慢速队列 | ${todayTokensStr} tok`
           : `⚡ ${remaining}/${limit} | ${todayTokensStr} tok`;
         break;
     }
 
     this.item.text = label;
 
-    // Severity color
+    // Severity color (gentle warning instead of alarming crash-red)
     const remainingPercent = limit > 0 ? (remaining / limit) * 100 : 0;
     if (remaining <= 0) {
-      this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+      this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     } else if (remainingPercent <= lowThreshold) {
       this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     } else {
