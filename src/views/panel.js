@@ -83,9 +83,9 @@
 
     // 1. Profile
     if (data.profile) {
-      userName.textContent = data.profile.name || 'Cursor User';
+      userName.textContent = data.profile.name || 'Cursor 用户';
       userEmail.textContent = data.profile.email || '';
-      userTier.textContent = (data.profile.membershipType || 'PRO').toUpperCase();
+      userTier.textContent = (data.profile.membershipType || 'PRO').toUpperCase() + ' 会员';
 
       if (data.profile.avatarUrl) {
         userAvatar.src = data.profile.avatarUrl;
@@ -104,7 +104,7 @@
       gaugeValue.textContent = formatCompact(remaining);
       quotaUsed.textContent = formatNumber(used);
       quotaLimit.textContent = formatNumber(limit);
-      quotaPercentBadge.textContent = `${percentUsed}% used`;
+      quotaPercentBadge.textContent = `已用 ${percentUsed}%`;
 
       const circumference = 2 * Math.PI * 40; // r=40 -> 251.32
       const remPercent = limit > 0 ? (remaining / limit) : 0;
@@ -121,9 +121,9 @@
 
       // Billing cycle
       daysCount.textContent = String(daysUntilReset);
-      daysResetPill.textContent = `${daysUntilReset} Days`;
-      cycleStart.textContent = data.quota.billingCycleStart ? `Start: ${data.quota.billingCycleStart}` : '';
-      cycleEnd.textContent = data.quota.billingCycleEnd ? `Reset: ${data.quota.billingCycleEnd}` : '';
+      daysResetPill.textContent = `${daysUntilReset} 天`;
+      cycleStart.textContent = data.quota.billingCycleStart ? `周期起始: ${data.quota.billingCycleStart}` : '';
+      cycleEnd.textContent = data.quota.billingCycleEnd ? `重置日期: ${data.quota.billingCycleEnd}` : '';
 
       // Estimate cycle progress (typical 30 days)
       const daysPassed = Math.max(0, 30 - daysUntilReset);
@@ -147,11 +147,11 @@
     if (data.sandUsage) {
       const su = data.sandUsage;
       sandUsedVal.textContent = `${su.usagePercent}%`;
-      sandPercentBadge.textContent = `${su.usagePercent}%`;
+      sandPercentBadge.textContent = `已用 ${su.usagePercent}%`;
       sandProgress.style.width = `${Math.min(100, su.usagePercent)}%`;
       if (su.nextResetUtc) {
         const d = new Date(su.nextResetUtc);
-        sandResetDate.textContent = `Reset: ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+        sandResetDate.textContent = `重置时间: ${d.toLocaleDateString([], { month: 'numeric', day: 'numeric' })}`;
       }
     }
 
@@ -166,11 +166,11 @@
   }
 
   function renderModels(models, totalCount) {
-    totalEventsCount.textContent = `${formatNumber(totalCount)} calls recorded`;
+    totalEventsCount.textContent = `累计记录 ${formatNumber(totalCount)} 次请求`;
     modelsList.innerHTML = '';
 
     if (!models || models.length === 0) {
-      modelsList.innerHTML = '<div class="empty-state">No model usage recorded</div>';
+      modelsList.innerHTML = '<div class="empty-state">暂无模型使用记录</div>';
       return;
     }
 
@@ -210,7 +210,7 @@
             <span class="model-dot" style="background-color: ${color};"></span>
             <span class="model-name">${m.name}</span>
           </div>
-          <span class="model-stat-val">${formatCompact(m.totalTokens)} tok (${m.percent}%)</span>
+          <span class="model-stat-val">${formatCompact(m.totalTokens)} Token (${m.percent}%)</span>
         </div>
         <div class="model-bar-bg">
           <div class="model-bar-fill" style="width: ${m.percent}%; background-color: ${color};"></div>
@@ -267,9 +267,9 @@
       cell.addEventListener('mouseenter', (e) => {
         const rect = cell.getBoundingClientRect();
         heatmapTooltip.innerHTML = `
-          <strong>${d.key}</strong><br/>
-          Tokens: <strong>${formatNumber(tokens)}</strong><br/>
-          Calls: ${count} | Cost: ${cost}
+          <strong>📅 ${d.key}</strong><br/>
+          消耗总量: <strong>${formatNumber(tokens)} Token</strong><br/>
+          调用次数: ${count} 次 | 费用: ${cost}
         `;
         heatmapTooltip.style.display = 'block';
         heatmapTooltip.style.left = `${rect.left + window.scrollX - 40}px`;
@@ -288,7 +288,7 @@
     eventsTbody.innerHTML = '';
 
     if (!events || events.length === 0) {
-      eventsTbody.innerHTML = '<tr><td colspan="5" class="empty-state">No recent events recorded</td></tr>';
+      eventsTbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无近期调用记录</td></tr>';
       return;
     }
 

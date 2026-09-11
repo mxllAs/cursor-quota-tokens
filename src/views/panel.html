@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cursor Quota & Tokens</title>
+  <title>Cursor 额度与 Token 统计</title>
   <link rel="stylesheet" href="{{cssUri}}">
 </head>
 <body>
   <div id="app" class="dashboard-container">
-    <!-- Header Section -->
+    <!-- 头部用户信息 -->
     <header class="dashboard-header">
       <div class="user-profile">
         <div class="avatar-wrapper">
@@ -18,14 +18,14 @@
         </div>
         <div class="user-meta">
           <div class="user-name-row">
-            <h2 id="userName" class="user-name">Loading...</h2>
-            <span id="userTier" class="tier-pill">Active</span>
+            <h2 id="userName" class="user-name">加载中...</h2>
+            <span id="userTier" class="tier-pill">有效会员</span>
           </div>
-          <p id="userEmail" class="user-email">Detecting account...</p>
+          <p id="userEmail" class="user-email">正在检测账户...</p>
         </div>
       </div>
       <div class="header-actions">
-        <button id="btnRefresh" class="action-btn" title="Refresh data">
+        <button id="btnRefresh" class="action-btn" title="刷新数据">
           <svg class="icon-refresh" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
             <path d="M23 4v6h-6"></path>
             <path d="M1 20v-6h6"></path>
@@ -35,12 +35,12 @@
       </div>
     </header>
 
-    <!-- Quota & Metrics Cards -->
+    <!-- 配额与统计卡片网格 -->
     <div class="metrics-grid">
-      <!-- Fast Requests Card -->
+      <!-- 快速请求配额卡片 -->
       <div class="glass-card quota-card">
         <div class="card-header">
-          <span class="card-title">Fast Requests (Pro)</span>
+          <span class="card-title">快速请求配额 (Pro)</span>
           <span id="quotaPercentBadge" class="card-badge">--%</span>
         </div>
         <div class="card-body gauge-body">
@@ -51,98 +51,98 @@
             </svg>
             <div class="gauge-content">
               <span id="gaugeValue" class="gauge-value">--</span>
-              <span class="gauge-sub">remaining</span>
+              <span class="gauge-sub">剩余可用</span>
             </div>
           </div>
           <div class="gauge-meta">
             <div class="meta-item">
-              <span class="meta-label">Used</span>
+              <span class="meta-label">已用次数</span>
               <span id="quotaUsed" class="meta-val">--</span>
             </div>
             <div class="meta-item">
-              <span class="meta-label">Limit</span>
+              <span class="meta-label">计划上限</span>
               <span id="quotaLimit" class="meta-val">--</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Billing Cycle & Reset Card -->
+      <!-- 账单周期与重置倒计时卡片 -->
       <div class="glass-card cycle-card">
         <div class="card-header">
-          <span class="card-title">Billing Cycle</span>
-          <span id="daysResetPill" class="card-badge badge-blue">-- Days</span>
+          <span class="card-title">账单重置倒计时</span>
+          <span id="daysResetPill" class="card-badge badge-blue">-- 天</span>
         </div>
         <div class="card-body">
           <div class="countdown-hero">
             <span id="daysCount" class="countdown-number">--</span>
-            <span class="countdown-unit">days left until reset</span>
+            <span class="countdown-unit">天后重置当月额度</span>
           </div>
           <div class="progress-bar-container">
             <div id="cycleProgress" class="progress-bar-fill" style="width: 0%;"></div>
           </div>
           <div class="date-range-row">
-            <span id="cycleStart" class="date-sub">Start: --</span>
-            <span id="cycleEnd" class="date-sub">Reset: --</span>
+            <span id="cycleStart" class="date-sub">起始: --</span>
+            <span id="cycleEnd" class="date-sub">重置: --</span>
           </div>
         </div>
       </div>
 
-      <!-- Today's Activity Card -->
+      <!-- 今日消耗统计卡片 -->
       <div class="glass-card today-card">
         <div class="card-header">
-          <span class="card-title">Today's Consumption</span>
+          <span class="card-title">今日消耗统计</span>
           <span id="todayCostBadge" class="card-badge badge-green">$0.00</span>
         </div>
         <div class="card-body">
           <div class="today-token-hero">
             <span id="todayTokens" class="hero-token-val">0</span>
-            <span class="hero-token-lbl">total tokens</span>
+            <span class="hero-token-lbl">今日总 Token</span>
           </div>
           <div class="token-trio">
             <div class="trio-item">
-              <span class="trio-lbl">Input</span>
+              <span class="trio-lbl">输入 Token</span>
               <span id="todayInput" class="trio-val">0</span>
             </div>
             <div class="trio-item">
-              <span class="trio-lbl">Output</span>
+              <span class="trio-lbl">输出 Token</span>
               <span id="todayOutput" class="trio-val">0</span>
             </div>
             <div class="trio-item">
-              <span class="trio-lbl">Cache Read</span>
+              <span class="trio-lbl">缓存读取</span>
               <span id="todayCache" class="trio-val">0</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Weekly Quota Card -->
+      <!-- 每周额外配额卡片 -->
       <div class="glass-card sand-card" id="sandCard">
         <div class="card-header">
-          <span class="card-title">Weekly Allowance</span>
+          <span class="card-title">每周配额 (Grok/思维模型)</span>
           <span id="sandPercentBadge" class="card-badge badge-purple">--%</span>
         </div>
         <div class="card-body">
           <div class="sand-hero">
             <span id="sandUsedVal" class="hero-token-val">--%</span>
-            <span class="hero-token-lbl">weekly limit used</span>
+            <span class="hero-token-lbl">周限额已消耗</span>
           </div>
           <div class="progress-bar-container">
             <div id="sandProgress" class="progress-bar-fill fill-purple" style="width: 0%;"></div>
           </div>
           <div class="date-range-row">
-            <span class="date-sub">Type: Grok / Thinking</span>
-            <span id="sandResetDate" class="date-sub">Resets: Weekly</span>
+            <span class="date-sub">类型: 额外高阶额度</span>
+            <span id="sandResetDate" class="date-sub">重置: 每周自动刷新</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Models Breakdown Section -->
+    <!-- 模型消耗分布 -->
     <div class="glass-card section-card">
       <div class="card-header">
-        <span class="card-title">Model Usage Breakdown</span>
-        <span id="totalEventsCount" class="card-sub-info">0 calls</span>
+        <span class="card-title">模型用量分布</span>
+        <span id="totalEventsCount" class="card-sub-info">0 次请求</span>
       </div>
       <div class="card-body models-body">
         <div class="donut-wrapper">
@@ -156,21 +156,21 @@
       </div>
     </div>
 
-    <!-- GitHub-Style Activity Heatmap -->
+    <!-- GitHub 风格活跃度热力图 -->
     <div class="glass-card section-card">
       <div class="card-header">
         <div class="header-left">
-          <span class="card-title">Activity Heatmap</span>
-          <span class="card-sub-info">Past 90 Days</span>
+          <span class="card-title">编码活跃度热力图 (Activity Heatmap)</span>
+          <span class="card-sub-info">过去 90 天</span>
         </div>
         <div class="heatmap-legend">
-          <span class="legend-text">Less</span>
+          <span class="legend-text">少</span>
           <div class="legend-cell lvl-0"></div>
           <div class="legend-cell lvl-1"></div>
           <div class="legend-cell lvl-2"></div>
           <div class="legend-cell lvl-3"></div>
           <div class="legend-cell lvl-4"></div>
-          <span class="legend-text">More</span>
+          <span class="legend-text">多</span>
         </div>
       </div>
       <div class="card-body heatmap-body">
@@ -183,27 +183,27 @@
       </div>
     </div>
 
-    <!-- Recent Usage Events Log -->
+    <!-- 近期调用记录明细 -->
     <div class="glass-card section-card">
       <div class="card-header">
-        <span class="card-title">Recent Prompt Events</span>
-        <span class="card-sub-info">Latest 30 requests</span>
+        <span class="card-title">近期 Prompt 调用明细</span>
+        <span class="card-sub-info">最新 30 次记录</span>
       </div>
       <div class="card-body table-body">
         <div class="table-responsive">
           <table class="events-table">
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Model</th>
-                <th>Tokens</th>
-                <th>Cache</th>
-                <th>Est. Cost</th>
+                <th>时间</th>
+                <th>使用模型</th>
+                <th>生成 Token</th>
+                <th>缓存读取</th>
+                <th>估算费用</th>
               </tr>
             </thead>
             <tbody id="eventsTbody">
               <tr>
-                <td colspan="5" class="empty-state">Loading events...</td>
+                <td colspan="5" class="empty-state">正在加载明细记录...</td>
               </tr>
             </tbody>
           </table>

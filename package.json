@@ -1,8 +1,8 @@
 {
   "name": "cursor-quota-tokens",
-  "displayName": "Cursor Quota & Tokens Tracker",
-  "description": "Real-time tracking of Cursor fast requests, plan quota, Grok/Sand weekly allowance, reset countdown, and detailed token consumption per model with GitHub-style activity heatmap.",
-  "version": "1.0.0",
+  "displayName": "Cursor 配额与 Token 监控 (Cursor Quota & Tokens Tracker)",
+  "description": "实时监控 Cursor 快速请求配额、重置倒计时、Grok/思维模型周额度以及分模型 Token 消耗（支持 GitHub 风格活跃度热力图）。",
+  "version": "1.0.1",
   "publisher": "weiyi",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -24,7 +24,9 @@
     "usage",
     "tracker",
     "claude",
-    "gpt-4"
+    "gpt-4",
+    "配额",
+    "用量"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -35,7 +37,7 @@
       "activitybar": [
         {
           "id": "cursor-quota-tokens-view",
-          "title": "Cursor Quota",
+          "title": "Cursor 额度",
           "icon": "images/statusbar-icon.svg"
         }
       ]
@@ -45,32 +47,32 @@
         {
           "type": "webview",
           "id": "cursorQuota.dashboard",
-          "name": "Cursor Usage & Quota"
+          "name": "Cursor 用量与额度大盘"
         }
       ]
     },
     "commands": [
       {
         "command": "cursorQuota.refresh",
-        "title": "Refresh Cursor Quota & Tokens",
-        "category": "Cursor Quota",
+        "title": "刷新 Cursor 额度与 Token",
+        "category": "Cursor 额度",
         "icon": "$(refresh)"
       },
       {
         "command": "cursorQuota.openDashboard",
-        "title": "Open Cursor Usage Dashboard",
-        "category": "Cursor Quota",
+        "title": "打开 Cursor 用量大盘",
+        "category": "Cursor 额度",
         "icon": "$(dashboard)"
       },
       {
         "command": "cursorQuota.setToken",
-        "title": "Set Cursor Session Token Manually",
-        "category": "Cursor Quota"
+        "title": "手动设置 Cursor 会话令牌 (Session Token)",
+        "category": "Cursor 额度"
       },
       {
         "command": "cursorQuota.clearToken",
-        "title": "Clear Stored Cursor Token",
-        "category": "Cursor Quota"
+        "title": "清除已保存的会话令牌 (恢复自动检测)",
+        "category": "Cursor 额度"
       }
     ],
     "menus": {
@@ -83,14 +85,14 @@
       ]
     },
     "configuration": {
-      "title": "Cursor Quota & Tokens Tracker",
+      "title": "Cursor 额度与 Token 监控配置",
       "properties": {
         "cursorQuota.refreshInterval": {
           "type": "number",
           "default": 10,
           "minimum": 1,
           "maximum": 120,
-          "description": "Automatic refresh interval in minutes."
+          "description": "自动刷新频率（单位：分钟）。"
         },
         "cursorQuota.statusBarFormat": {
           "type": "string",
@@ -100,13 +102,19 @@
             "percent_only",
             "tokens_only"
           ],
+          "enumDescriptions": [
+            "显示剩余请求与今日 Token（如：⚡ 0/2000 | 61.2M tok）",
+            "仅显示快速请求次数（如：⚡ 0/2000）",
+            "仅显示剩余可用百分比（如：⚡ 余 0%）",
+            "仅显示今日 Token 数量（如：⚡ 61.2M Token）"
+          ],
           "default": "requests_and_tokens",
-          "description": "Information format displayed in the status bar."
+          "description": "底部状态栏展示的信息格式。"
         },
         "cursorQuota.lowQuotaThreshold": {
           "type": "number",
           "default": 15,
-          "description": "Warning threshold for remaining quota percentage."
+          "description": "配额余量低预警阈值百分比（低于此值状态栏变黄/变红）。"
         }
       }
     }

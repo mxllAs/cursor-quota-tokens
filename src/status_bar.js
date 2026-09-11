@@ -25,7 +25,7 @@ class StatusBarManager {
   update(data) {
     if (!data || !data.quota) {
       this.item.text = '$(dashboard) Cursor: --';
-      this.item.tooltip = 'Click to open Cursor Quota Dashboard';
+      this.item.tooltip = '点击打开 Cursor 额度大盘';
       this.item.show();
       return;
     }
@@ -44,10 +44,10 @@ class StatusBarManager {
         label = `⚡ ${remaining}/${limit}`;
         break;
       case 'percent_only':
-        label = `⚡ ${Math.max(0, 100 - percentUsed)}% rem`;
+        label = `⚡ 余 ${Math.max(0, 100 - percentUsed)}%`;
         break;
       case 'tokens_only':
-        label = `⚡ ${todayTokensStr} tok`;
+        label = `⚡ ${todayTokensStr} Token`;
         break;
       case 'requests_and_tokens':
       default:
@@ -67,42 +67,43 @@ class StatusBarManager {
       this.item.backgroundColor = undefined;
     }
 
-    // Rich Markdown Tooltip
+    // Rich Markdown Tooltip in Chinese
     const md = new vscode.MarkdownString();
     md.isTrusted = true;
     md.supportHtml = true;
 
-    md.appendMarkdown(`### **Cursor Usage & Quota**\n\n`);
-    md.appendMarkdown(`👤 **User**: ${data.profile?.name || 'Cursor User'} (${(data.profile?.membershipType || 'pro').toUpperCase()})\n\n`);
+    const membership = (data.profile?.membershipType || 'pro').toUpperCase();
+    md.appendMarkdown(`### **⚡ Cursor 额度与 Token 统计**\n\n`);
+    md.appendMarkdown(`👤 **账户**: ${data.profile?.name || 'Cursor 用户'} (${membership} 会员)\n\n`);
     md.appendMarkdown(`---\n\n`);
-    md.appendMarkdown(`⚡ **Fast Requests**: **${used.toLocaleString()}** / **${limit.toLocaleString()}** (${percentUsed}% used)\n\n`);
-    md.appendMarkdown(`🟢 **Remaining**: **${remaining.toLocaleString()}** requests\n\n`);
+    md.appendMarkdown(`⚡ **快速请求配额**: **${used.toLocaleString()}** / **${limit.toLocaleString()}** (已用 ${percentUsed}%)\n\n`);
+    md.appendMarkdown(`🟢 **剩余可用次数**: **${remaining.toLocaleString()}** 次\n\n`);
     if (data.quota.billingCycleEnd) {
-      md.appendMarkdown(`⏳ **Resets in**: **${daysUntilReset} days** (${data.quota.billingCycleEnd})\n\n`);
+      md.appendMarkdown(`⏳ **重置倒计时**: **${daysUntilReset} 天后重置** (${data.quota.billingCycleEnd})\n\n`);
     }
     if (data.sandUsage && data.sandUsage.usagePercent > 0) {
-      md.appendMarkdown(`🤖 **Weekly Quota**: ${data.sandUsage.usagePercent}% used\n\n`);
+      md.appendMarkdown(`🤖 **每周配额 (Grok/思维)**: 已用 ${data.sandUsage.usagePercent}%\n\n`);
     }
     md.appendMarkdown(`---\n\n`);
-    md.appendMarkdown(`📊 **Today's Tokens**: **${todayTokens.toLocaleString()}**\n\n`);
+    md.appendMarkdown(`📊 **今日消耗 Token**: **${todayTokens.toLocaleString()}**\n\n`);
     if (data.tokens?.today?.costCents > 0) {
-      md.appendMarkdown(`💰 **Today's Cost**: **$${(data.tokens.today.costCents / 100).toFixed(2)}**\n\n`);
+      md.appendMarkdown(`💰 **今日估算费用**: **$${(data.tokens.today.costCents / 100).toFixed(2)}**\n\n`);
     }
     md.appendMarkdown(`---\n\n`);
-    md.appendMarkdown(`[👉 Click to Open Dashboard](command:cursorQuota.openDashboard)`);
+    md.appendMarkdown(`[👉 点击打开 Cursor 用量大盘](command:cursorQuota.openDashboard)`);
 
     this.item.tooltip = md;
     this.item.show();
   }
 
   showLoading() {
-    this.item.text = '$(sync~spin) Cursor Quota...';
+    this.item.text = '$(sync~spin) Cursor 额度查询中...';
     this.item.show();
   }
 
   showError(msg) {
-    this.item.text = '$(warning) Cursor: Auth Error';
-    this.item.tooltip = `Error: ${msg}\nClick to retry or set token.`;
+    this.item.text = '$(warning) Cursor: 认证失败';
+    this.item.tooltip = `错误信息: ${msg}\n点击重试或手动设置 Token。`;
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     this.item.show();
   }

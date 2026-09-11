@@ -8,10 +8,10 @@ const { WebviewProvider } = require('./src/webview_provider.js');
 let refreshTimer = null;
 
 /**
- * Extension activation entrypoint
+ * 插件激活入口
  */
 async function activate(context) {
-  console.log('[CursorQuota] Extension activating...');
+  console.log('[CursorQuota] 插件正在激活...');
 
   const auth = new CursorAuth(context);
   const api = new CursorApi(auth);
@@ -27,16 +27,16 @@ async function activate(context) {
   const statusBar = new StatusBarManager(context);
   const webviewProvider = new WebviewProvider(context, aggregator, statusBar);
 
-  // Register Webview View Provider (Sidebar)
+  // 注册侧边栏 Webview View Provider
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('cursorQuota.dashboard', webviewProvider)
   );
 
-  // Register Commands
+  // 注册命令
   context.subscriptions.push(
     vscode.commands.registerCommand('cursorQuota.refresh', async () => {
       await webviewProvider.refreshAll(true);
-      vscode.window.setStatusBarMessage('$(check) Cursor Quota refreshed', 2500);
+      vscode.window.setStatusBarMessage('$(check) Cursor 额度已刷新', 2500);
     }),
 
     vscode.commands.registerCommand('cursorQuota.openDashboard', async () => {
@@ -45,27 +45,27 @@ async function activate(context) {
 
     vscode.commands.registerCommand('cursorQuota.setToken', async () => {
       const input = await vscode.window.showInputBox({
-        title: 'Set Cursor Session Token',
-        prompt: 'Paste your WorkosCursorSessionToken cookie value or Cursor access token JWT',
+        title: '设置 Cursor 会话令牌 (Session Token)',
+        prompt: '请粘贴您的 WorkosCursorSessionToken Cookie 值或 Cursor accessToken JWT',
         password: true,
         placeHolder: 'user_01KA...::eyJhbGci...'
       });
 
       if (input && input.trim()) {
         await context.secrets.store('cursor_session_token', input.trim());
-        vscode.window.showInformationMessage('Cursor session token saved successfully.');
+        vscode.window.showInformationMessage('Cursor 会话令牌已成功保存。');
         await webviewProvider.refreshAll(true);
       }
     }),
 
     vscode.commands.registerCommand('cursorQuota.clearToken', async () => {
       await context.secrets.delete('cursor_session_token');
-      vscode.window.showInformationMessage('Manual session token cleared. Extension will use auto-detected local credentials.');
+      vscode.window.showInformationMessage('已清除手动保存的令牌，恢复为自动检测本地凭证。');
       await webviewProvider.refreshAll(true);
     })
   );
 
-  // Function to setup interval timer
+  // 定时器刷新逻辑
   function setupTimer() {
     if (refreshTimer) {
       clearInterval(refreshTimer);
@@ -81,7 +81,7 @@ async function activate(context) {
     }, intervalMs);
   }
 
-  // Setup configuration listener
+  // 监听配置更改
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
       if (e.affectsConfiguration('cursorQuota.refreshInterval')) {
@@ -95,16 +95,16 @@ async function activate(context) {
 
   setupTimer();
 
-  // Trigger initial fetch
+  // 首次自启动查询
   setTimeout(() => {
     webviewProvider.refreshAll(false);
   }, 1000);
 
-  console.log('[CursorQuota] Extension activated successfully.');
+  console.log('[CursorQuota] 插件激活完成。');
 }
 
 /**
- * Extension deactivation
+ * 插件停用清理
  */
 function deactivate() {
   if (refreshTimer) {
