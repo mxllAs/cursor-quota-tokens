@@ -19,6 +19,8 @@
   const cursorModelBar = document.getElementById('cursorModelBar');
   const otherModelPct = document.getElementById('otherModelPct');
   const otherModelBar = document.getElementById('otherModelBar');
+  const bonusGrantRow = document.getElementById('bonusGrantRow');
+  const bonusGrantVal = document.getElementById('bonusGrantVal');
   const queueStatusBanner = document.getElementById('queueStatusBanner');
   const queueStatusText = document.getElementById('queueStatusText');
 
@@ -138,15 +140,31 @@
         otherModelPct.textContent = `${apiPct}% used`;
         otherModelBar.style.width = `${Math.min(100, apiPct)}%`;
       }
+
+      const bonus = data.quota.bonus || 0;
+      if (bonusGrantRow && bonusGrantVal) {
+        if (bonus > 0) {
+          bonusGrantRow.style.display = 'flex';
+          bonusGrantVal.textContent = `${bonus.toLocaleString()} 次可用 · 官方赠送抵扣`;
+        } else {
+          bonusGrantRow.style.display = 'none';
+        }
+      }
+
       if (queueStatusBanner && queueStatusText) {
-        if (remaining <= 0) {
+        const qIcon = queueStatusBanner.querySelector('.queue-icon');
+        if (bonus > 0) {
+          queueStatusBanner.className = 'queue-status-banner bonus';
+          if (qIcon) qIcon.textContent = '🎁';
+          queueStatusText.textContent = `基础额度已用满 · 当前由官方 Credit Grant (${bonus.toLocaleString()}次) 免费兜底`;
+        } else if (remaining <= 0) {
           queueStatusBanner.className = 'queue-status-banner';
-          queueStatusBanner.querySelector('.queue-icon').textContent = '🐢';
-          queueStatusText.textContent = '高速配额已用完 · 当前自动使用慢速队列 (Slow Queue)';
+          if (qIcon) qIcon.textContent = '⚠️';
+          queueStatusText.textContent = '基础与赠送配额已用完 · 需开启按量付费或等待重置';
         } else {
           queueStatusBanner.className = 'queue-status-banner fast';
-          queueStatusBanner.querySelector('.queue-icon').textContent = '⚡';
-          queueStatusText.textContent = `高速可用模式 · 剩余 ${remaining.toLocaleString()} 次快速请求`;
+          if (qIcon) qIcon.textContent = '⚡';
+          queueStatusText.textContent = `高速可用模式 · 剩余 ${remaining.toLocaleString()} 次基础请求`;
         }
       }
 
