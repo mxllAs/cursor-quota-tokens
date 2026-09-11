@@ -61,8 +61,11 @@
 
   // Refresh button click
   btnRefresh.addEventListener('click', () => {
-    btnRefresh.classList.add('spinning');
+    if (refreshIcon) refreshIcon.classList.add('spinning');
     vscode.postMessage({ command: 'refresh' });
+    setTimeout(() => {
+      if (refreshIcon) refreshIcon.classList.remove('spinning');
+    }, 4000);
   });
 
   // Listen for messages from extension
@@ -70,21 +73,33 @@
     const message = event.data;
     if (message.type === 'update') {
       render(message.data);
-      btnRefresh.classList.remove('spinning');
+      if (refreshIcon) refreshIcon.classList.remove('spinning');
     } else if (message.type === 'loading') {
-      btnRefresh.classList.add('spinning');
+      if (refreshIcon) refreshIcon.classList.add('spinning');
+    } else if (message.type === 'error') {
+      if (refreshIcon) refreshIcon.classList.remove('spinning');
     }
   });
 
   // Tell extension we are ready
   vscode.postMessage({ command: 'ready' });
 
-  function formatCompact(num) {
-    if (!num || num <= 0) return '0';
-    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-    return String(num);
+  /**
+   * Format token counts with intuitive Chinese units (万 / 亿) matching Antigravity
+   */
+  function formatTokens(num) {
+    if (num == null || isNaN(num)) return '0';
+    num = Number(num);
+    if (num === 0) return '0';
+    if (num >= 100000000) {
+      const yi = num / 100000000;
+      return parseFloat(yi.toFixed(yi >= 100 ? 1 : 2)) + ' 亿';
+    }
+    if (num >= 10000) {
+      const wan = num / 10000;
+      return parseFloat(wan.toFixed(wan >= 100 ? 1 : 2)) + ' 万';
+    }
+    return num.toLocaleString();
   }
 
   function formatNumber(num) {
@@ -174,10 +189,10 @@
     // 4. Today Tokens & Metrics
     if (data.tokens && data.tokens.today) {
       const td = data.tokens.today;
-      todayTokens.textContent = formatCompact(td.totalTokens);
-      todayInput.textContent = formatCompact(td.inputTokens);
-      todayCache.textContent = formatCompact(td.cacheTokens);
-      todayOutput.textContent = formatCompact(td.outputTokens);
+      todayTokens.textContent = formatTokens(td.totalTokens);
+      todayInput.textContent = formatTokens(td.inputTokens);
+      todayCache.textContent = formatTokens(td.cacheTokens);
+      todayOutput.textContent = formatTokens(td.outputTokens);
       todayRequestsCount.textContent = `${formatNumber(td.requestsCount || 0)} 次`;
 
       const costDollars = (td.costCents / 100).toFixed(2);
@@ -216,7 +231,7 @@
               <span class="model-title">${escapeHtml(m.name)}</span>
             </div>
             <div class="model-right">
-              <span class="model-tok">${formatCompact(m.totalTokens)} tok</span>
+              <span class="model-tok">${formatTokens(m.totalTokens)} tok</span>
               <span class="model-pct-text">${m.percent}%</span>
             </div>
           </div>
@@ -242,9 +257,9 @@
           <td style="color: var(--text-muted);">${ev.timeStr}</td>
           <td style="font-weight: 600;">${escapeHtml(ev.model)}</td>
           <td>
-            <span style="color: var(--input-color);">${formatCompact(ev.inputTokens)}</span> /
-            <span style="color: var(--output-color);">${formatCompact(ev.outputTokens)}</span> /
-            <span style="color: var(--cache-color);">${formatCompact(ev.cacheTokens)}</span>
+            <span style="color: var(--input-color);">${formatTokens(ev.inputTokens)}</span> /
+            <span style="color: var(--output-color);">${formatTokens(ev.outputTokens)}</span> /
+            <span style="color: var(--cache-color);">${formatTokens(ev.cacheTokens)}</span>
           </td>
           <td style="color: #10b981; font-weight: 600;">${ev.costStr}</td>
         `;
@@ -290,8 +305,8 @@
     }
 
     heatStatActive.textContent = `${activeDays} 天`;
-    heatStatPeak.textContent = `${formatCompact(maxTokens)} tok`;
-    heatStatTotal.textContent = `${formatCompact(totalTokens)} tok`;
+    heatStatPeak.textContent = `${formatTokens(maxTokens)} tok`;
+    heatStatTotal.textContent = `${formatTokens(totalTokens)} tok`;
 
     daysList.forEach(item => {
       const cell = document.createElement('div');

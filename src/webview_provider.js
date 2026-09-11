@@ -82,7 +82,7 @@ class WebviewProvider {
         await this.updateWebview(targetWebview, false);
         break;
       case 'refresh':
-        await this.refreshAll(true);
+        await this.refreshAll(true, targetWebview);
         break;
     }
   }
@@ -90,9 +90,12 @@ class WebviewProvider {
   /**
    * Refresh both status bar and all active webviews
    */
-  async refreshAll(force = false) {
+  async refreshAll(force = false, targetWebview = null) {
     if (this.statusBar) {
       this.statusBar.showLoading();
+    }
+    if (targetWebview) {
+      try { targetWebview.postMessage({ type: 'loading' }); } catch (e) {}
     }
     this.postToAll({ type: 'loading' });
 
@@ -101,10 +104,17 @@ class WebviewProvider {
       if (this.statusBar) {
         this.statusBar.update(data);
       }
+      if (targetWebview) {
+        try { targetWebview.postMessage({ type: 'update', data }); } catch (e) {}
+      }
       this.postToAll({ type: 'update', data });
       return data;
     } catch (e) {
       console.error('[WebviewProvider] Refresh error:', e);
+      if (targetWebview) {
+        try { targetWebview.postMessage({ type: 'error', error: e.message }); } catch (err) {}
+      }
+      this.postToAll({ type: 'error', error: e.message });
       if (this.statusBar) {
         this.statusBar.showError(e.message);
       }
@@ -124,6 +134,7 @@ class WebviewProvider {
       }
     } catch (e) {
       console.error('[WebviewProvider] UpdateWebview error:', e);
+      try { targetWebview.postMessage({ type: 'error', error: e.message }); } catch (err) {}
     }
   }
 
@@ -131,11 +142,15 @@ class WebviewProvider {
    * Send message to all active webviews
    */
   postToAll(msg) {
-    if (this.view && this.view.visible) {
-      this.view.webview.postMessage(msg);
+    if (this.view) {
+      try {
+        this.view.webview.postMessage(msg);
+      } catch (e) {}
     }
     if (this.panel) {
-      this.panel.webview.postMessage(msg);
+      try {
+        this.panel.webview.postMessage(msg);
+      } catch (e) {}
     }
   }
 

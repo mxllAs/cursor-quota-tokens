@@ -2,7 +2,7 @@
   "name": "cursor-quota-tokens",
   "displayName": "Cursor 配额与 Token 监控 (Cursor Quota & Tokens Tracker)",
   "description": "实时监控 Cursor 快速请求配额、重置倒计时、Grok/思维模型周额度以及分模型 Token 消耗（支持 GitHub 风格活跃度热力图）。",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "publisher": "isArray",
   "icon": "images/icon.png",
   "license": "MIT",

@@ -9,14 +9,21 @@ class StatusBarManager {
   }
 
   /**
-   * Format numbers into compact human-readable units (K, M, B)
+   * Format token counts with intuitive Chinese units (万 / 亿) matching Antigravity
    */
-  formatCompactNumber(num) {
-    if (!num || num <= 0) return '0';
-    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-    return String(num);
+  formatTokensChinese(num) {
+    if (num == null || isNaN(num)) return '0';
+    num = Number(num);
+    if (num === 0) return '0';
+    if (num >= 100000000) {
+      const yi = num / 100000000;
+      return parseFloat(yi.toFixed(yi >= 100 ? 1 : 2)) + '亿';
+    }
+    if (num >= 10000) {
+      const wan = num / 10000;
+      return parseFloat(wan.toFixed(wan >= 100 ? 1 : 2)) + '万';
+    }
+    return num.toLocaleString();
   }
 
   /**
@@ -36,7 +43,7 @@ class StatusBarManager {
 
     const { used, limit, remaining, percentUsed, daysUntilReset } = data.quota;
     const todayTokens = data.tokens?.today?.totalTokens || 0;
-    const todayTokensStr = this.formatCompactNumber(todayTokens);
+    const todayTokensStr = this.formatTokensChinese(todayTokens);
 
     let label = '';
     switch (format) {
