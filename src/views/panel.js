@@ -10,6 +10,7 @@
   const userName = document.getElementById('userName');
   const userEmail = document.getElementById('userEmail');
   const userTier = document.getElementById('userTier');
+  const sectionQuotaTitle = document.getElementById('sectionQuotaTitle');
 
   const queueBadge = document.getElementById('queueBadge');
   const cursorModelPct = document.getElementById('cursorModelPct');
@@ -19,8 +20,6 @@
   const queueStatusBanner = document.getElementById('queueStatusBanner');
   const queueAlertTitle = document.getElementById('queueAlertTitle');
   const queueAlertDesc = document.getElementById('queueAlertDesc');
-  const bonusSpendVal = document.getElementById('bonusSpendVal');
-
   const daysResetPill = document.getElementById('daysResetPill');
   const daysCount = document.getElementById('daysCount');
   const cycleProgress = document.getElementById('cycleProgress');
@@ -106,6 +105,32 @@
     return (num || 0).toLocaleString();
   }
 
+  /**
+   * Format membership tier with accurate display name and class
+   */
+  function formatMembership(tier) {
+    if (!tier) return { text: 'FREE 免费版', cls: 'tier-free', title: 'Free' };
+    const t = String(tier).toLowerCase().trim();
+    switch (t) {
+      case 'free':
+        return { text: 'FREE 免费版', cls: 'tier-free', title: 'Free' };
+      case 'hobby':
+        return { text: 'HOBBY 免费版', cls: 'tier-free', title: 'Hobby' };
+      case 'pro':
+        return { text: 'PRO $20/MO', cls: 'tier-pro', title: 'Pro' };
+      case 'pro_plus':
+      case 'pro+':
+        return { text: 'PRO+ $60/MO', cls: 'tier-pro-plus', title: 'Pro+' };
+      case 'business':
+        return { text: 'BUSINESS $40/MO', cls: 'tier-business', title: 'Business' };
+      case 'enterprise':
+        return { text: 'ENTERPRISE 企业版', cls: 'tier-enterprise', title: 'Enterprise' };
+      default:
+        const capitalized = t.charAt(0).toUpperCase() + t.slice(1);
+        return { text: t.toUpperCase(), cls: 'tier-pro', title: capitalized };
+    }
+  }
+
   function render(data) {
     if (!data) return;
 
@@ -113,7 +138,14 @@
     if (data.profile) {
       userName.textContent = data.profile.name || 'Cursor 用户';
       userEmail.textContent = data.profile.email || '';
-      userTier.textContent = (data.profile.membershipType || 'PRO').toUpperCase() + ' $20/MO';
+
+      const tierInfo = formatMembership(data.profile.membershipType);
+      userTier.textContent = tierInfo.text;
+      userTier.className = `account-tier ${tierInfo.cls}`;
+
+      if (sectionQuotaTitle) {
+        sectionQuotaTitle.textContent = `官方套餐配额 (Included in ${tierInfo.title})`;
+      }
 
       if (data.profile.avatarUrl) {
         userAvatar.src = data.profile.avatarUrl;
@@ -156,16 +188,7 @@
         queueAlertDesc.textContent = '当前请求享有官方最高优先级高速模型算力响应。';
       }
 
-      // Bonus spend & remaining
-      const bSpend = q.bonusSpend || 0;
-      const bSpendStr = formatTokens(bSpend).replace(/\s+/g, '');
-      if (bonusSpendVal) {
-        if (q.remainingBonus) {
-          bonusSpendVal.textContent = `已抵扣 ${bSpendStr} 点 · 仍有剩余`;
-        } else {
-          bonusSpendVal.textContent = `${bSpendStr} 点已抵扣 · 剩余 0 点 (慢速通道生效)`;
-        }
-      }
+
 
       // Billing Cycle
       const days = q.daysUntilReset || 0;
