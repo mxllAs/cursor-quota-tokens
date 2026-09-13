@@ -1,4 +1,4 @@
-# Cursor Quota & Tokens Tracker (Cursor 配额与 Token 监控)
+# Cursor Quota & Token Monitor (Cursor 配额与 Token 监控)
 
 <p align="center">
   <img src="images/icon.png" width="128" height="128" alt="Cursor Quota Logo" />
@@ -46,7 +46,7 @@
 ### 方式一：VS Code / Cursor 插件市场一键安装（推荐）
 1. 在 Cursor 或 VS Code 扩展面板中搜索：
    ```
-   Cursor Quota & Tokens Tracker
+   Cursor Quota & Token Monitor
    ```
 2. 点击 **Install** 即可开始使用。
 

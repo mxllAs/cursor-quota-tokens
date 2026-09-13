@@ -1,11 +1,11 @@
-# Cursor Quota & Tokens Tracker
+# Cursor Quota & Token Monitor
 
 <p align="center">
   <img src="images/icon.png" width="128" height="128" alt="Cursor Quota Logo" />
 </p>
 
 <p align="center">
-  <strong>Real-time tracker for Cursor fast requests, reset countdown, Grok/Sand weekly quota, and detailed token consumption (featuring a GitHub-style 90-day activity heatmap).</strong>
+  <strong>Real-time monitor for Cursor fast requests, reset countdown, Grok/Sand weekly quota, and detailed token consumption (featuring a GitHub-style 90-day activity heatmap).</strong>
 </p>
 
 <p align="center">
@@ -53,7 +53,7 @@
 1. Open the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X`);
 2. Search for:
    ```
-   Cursor Quota & Tokens Tracker
+   Cursor Quota & Token Monitor
    ```
 3. Click **Install**.
 
