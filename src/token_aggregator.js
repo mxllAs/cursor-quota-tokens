@@ -215,18 +215,35 @@ class TokenAggregator {
         };
       });
 
-      // Assemble final data structure
-      const planUsage = currentPeriod?.planUsage || summary?.individualUsage?.plan || {};
-      const autoPercentUsed = planUsage.autoPercentUsed !== undefined ? planUsage.autoPercentUsed : (summary?.individualUsage?.plan?.autoPercentUsed ?? 100);
-      const apiPercentUsed = planUsage.apiPercentUsed !== undefined ? planUsage.apiPercentUsed : (summary?.individualUsage?.plan?.apiPercentUsed ?? 100);
-      const totalPercentUsed = planUsage.totalPercentUsed !== undefined ? planUsage.totalPercentUsed : 100;
+      // Assemble quota: usage-summary is what cursor.com Overview uses.
+      // get-current-period-usage.displayMessage uses includedSpend/limit and
+      // can read "0%" on Free even when included total usage is 34%.
+      const summaryPlan = summary?.individualUsage?.plan || {};
+      const periodPlan = currentPeriod?.planUsage || {};
 
-      const includedSpend = planUsage.includedSpend ?? planUsage.used ?? 2000;
-      const bonusSpend = planUsage.bonusSpend ?? planUsage.breakdown?.bonus ?? 0;
-      const totalSpend = planUsage.totalSpend ?? (includedSpend + bonusSpend);
-      const planLimit = planUsage.limit || (summary?.membershipType === 'pro' ? 2000 : 500);
-      const remainingBonus = planUsage.remainingBonus ?? false;
+      const autoPercentUsed = this.resolvePercent(
+        summaryPlan.autoPercentUsed,
+        periodPlan.autoPercentUsed
+      );
+      const apiPercentUsed = this.resolvePercent(
+        summaryPlan.apiPercentUsed,
+        this.parseDisplayPercent(summary?.namedModelSelectedDisplayMessage),
+        periodPlan.apiPercentUsed
+      );
+      const totalPercentUsed = this.resolvePercent(
+        summaryPlan.totalPercentUsed,
+        this.parseDisplayPercent(summary?.autoModelSelectedDisplayMessage),
+        periodPlan.totalPercentUsed
+      );
 
+      const includedSpend = this.firstNumber(periodPlan.includedSpend, summaryPlan.used, summaryPlan.breakdown?.included) ?? 0;
+      const bonusSpend = this.firstNumber(periodPlan.bonusSpend, summaryPlan.breakdown?.bonus) ?? 0;
+      const totalSpend = this.firstNumber(periodPlan.totalSpend, summaryPlan.breakdown?.total, includedSpend + bonusSpend) ?? 0;
+      const planLimit = this.firstNumber(periodPlan.limit, summaryPlan.limit) ?? 0;
+      const remainingBonus = periodPlan.remainingBonus ?? summaryPlan.remainingBonus ?? false;
+
+      const membershipType = String(summary?.membershipType || 'free').toLowerCase();
+      const { hasCursorModelsPool, hasOtherModelsPool } = this.detectUsagePools(membershipType);
       const onDemandEnabled = summary?.individualUsage?.onDemand?.enabled ?? false;
       const isQueueSlow = totalPercentUsed >= 100 && !onDemandEnabled;
 
@@ -241,12 +258,13 @@ class TokenAggregator {
         resetDateStr = `${cycleEnd.getMonth() + 1}月${cycleEnd.getDate()}日`;
       }
 
-      // Sand usage date
       let sandResetDateStr = '每周自动刷新';
       if (sand?.nextResetTimestampUtc) {
         const sandD = new Date(sand.nextResetTimestampUtc);
         sandResetDateStr = `${sandD.getMonth() + 1}月${sandD.getDate()}日`;
       }
+
+      const hasGrokBotWeekly = this.hasGrokBotWeekly(membershipType, sand);
 
       const aggregated = {
         timestamp: now,
@@ -254,13 +272,14 @@ class TokenAggregator {
           name: profile?.name || 'Cursor User',
           email: profile?.email || '',
           avatarUrl: profile?.picture || '',
-          membershipType: summary?.membershipType || 'pro',
+          membershipType,
           isUnlimited: summary?.isUnlimited || false
         },
         quota: {
           used: includedSpend,
           limit: planLimit,
-          remaining: Math.max(0, planLimit - includedSpend),
+          remaining: planLimit > 0 ? Math.max(0, planLimit - includedSpend) : 0,
+          hasNumericLimit: planLimit > 0,
           percentUsed: totalPercentUsed,
           autoPercentUsed,
           apiPercentUsed,
@@ -271,16 +290,19 @@ class TokenAggregator {
           remainingBonus,
           isQueueSlow,
           onDemandEnabled,
+          hasCursorModelsPool,
+          hasOtherModelsPool,
           billingCycleStart: cycleStart ? `${cycleStart.getMonth() + 1}月${cycleStart.getDate()}日` : '',
           billingCycleEnd: cycleEnd ? resetDateStr : '',
           resetDateStr,
           daysUntilReset
         },
         sandUsage: {
-          usagePercent: sand ? Math.round((sand.usagePercent || 0) * 100) : 0,
+          included: hasGrokBotWeekly,
+          usagePercent: hasGrokBotWeekly ? this.normalizeSandPercent(sand?.usagePercent) : 0,
           nextResetUtc: sand?.nextResetTimestampUtc || null,
           resetDateStr: sandResetDateStr,
-          hasAvailableUsage: sand?.hasAvailableUsage ?? true
+          hasAvailableUsage: sand?.hasAvailableUsage ?? false
         },
         tokens: {
           today: todayStats,
@@ -306,6 +328,61 @@ class TokenAggregator {
       }
       throw e;
     }
+  }
+
+  hasGrokBotWeekly(membershipType, sand) {
+    if (sand && sand.hasNonZeroIncludedLimit === true) return true;
+    if (sand && sand.hasNonZeroIncludedLimit === false) return false;
+    const m = String(membershipType || 'free').toLowerCase();
+    return m !== 'free' && m !== 'hobby';
+  }
+
+  normalizeSandPercent(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    if (n <= 1) return Math.round(n * 100);
+    return Math.round(n);
+  }
+
+  detectUsagePools(membershipType) {
+    const m = String(membershipType || 'free').toLowerCase();
+    const freeLike = m === 'free' || m === 'hobby';
+    const startLike = m === 'start';
+    return {
+      // Official: Cursor Models pool is included on Pro / Pro+ / Ultra / Start, not Hobby.
+      hasCursorModelsPool: !freeLike,
+      // Official: Start does not include Other Models; Hobby/Pro do (Hobby is limited).
+      hasOtherModelsPool: !startLike
+    };
+  }
+
+  roundPercent(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return Math.max(0, Math.round(n));
+  }
+
+  parseDisplayPercent(message) {
+    if (!message || typeof message !== 'string') return null;
+    const match = message.match(/used\s+(\d+(?:\.\d+)?)\s*%/i);
+    return match ? this.roundPercent(match[1]) : null;
+  }
+
+  firstNumber(...values) {
+    for (const value of values) {
+      if (value === undefined || value === null || value === '') continue;
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  }
+
+  resolvePercent(...values) {
+    for (const value of values) {
+      const pct = this.roundPercent(value);
+      if (pct !== null) return pct;
+    }
+    return 0;
   }
 
   /**

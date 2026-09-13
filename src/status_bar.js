@@ -41,36 +41,40 @@ class StatusBarManager {
     const format = config.get('statusBarFormat', 'requests_and_tokens');
     const lowThreshold = config.get('lowQuotaThreshold', 15);
 
-    const { used, limit, remaining, percentUsed, daysUntilReset } = data.quota;
+    const { used, limit, remaining, percentUsed, daysUntilReset, hasNumericLimit, isQueueSlow } = data.quota;
     const todayTokens = data.tokens?.today?.totalTokens || 0;
     const todayTokensStr = this.formatTokensChinese(todayTokens);
+    const usedPct = Number.isFinite(Number(percentUsed)) ? Math.round(Number(percentUsed)) : 0;
+    const remainingPct = Math.max(0, 100 - usedPct);
+    const exhausted = !!(isQueueSlow || (hasNumericLimit && remaining <= 0 && usedPct >= 100));
 
     let label = '';
     switch (format) {
       case 'requests_only':
-        label = remaining <= 0 ? `🐢 慢速队列` : `⚡ ${remaining}/${limit}`;
+        label = exhausted
+          ? `🐢 慢速队列`
+          : (hasNumericLimit ? `⚡ ${remaining}/${limit}` : `⚡ ${usedPct}% used`);
         break;
       case 'percent_only':
-        label = remaining <= 0 ? `🐢 慢速` : `⚡ 余 ${Math.max(0, 100 - percentUsed)}%`;
+        label = exhausted ? `🐢 慢速` : `⚡ 余 ${remainingPct}%`;
         break;
       case 'tokens_only':
         label = `⚡ ${todayTokensStr} tok`;
         break;
       case 'requests_and_tokens':
       default:
-        label = remaining <= 0 
+        label = exhausted
           ? `🐢 慢速队列 | ${todayTokensStr} tok`
-          : `⚡ ${remaining}/${limit} | ${todayTokensStr} tok`;
+          : (hasNumericLimit
+            ? `⚡ ${remaining}/${limit} | ${todayTokensStr} tok`
+            : `⚡ ${usedPct}% used | ${todayTokensStr} tok`);
         break;
     }
 
     this.item.text = label;
 
     // Severity color (gentle warning instead of alarming crash-red)
-    const remainingPercent = limit > 0 ? (remaining / limit) * 100 : 0;
-    if (remaining <= 0) {
-      this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    } else if (remainingPercent <= lowThreshold) {
+    if (exhausted || remainingPct <= lowThreshold) {
       this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     } else {
       this.item.backgroundColor = undefined;
@@ -81,25 +85,34 @@ class StatusBarManager {
     md.isTrusted = true;
     md.supportHtml = true;
 
-    const membership = (data.profile?.membershipType || 'pro').toUpperCase();
+    const membership = (data.profile?.membershipType || 'free').toUpperCase();
     md.appendMarkdown(`### **⚡ Cursor 额度与 Token 统计**\n\n`);
     md.appendMarkdown(`👤 **账户**: ${data.profile?.name || 'Cursor 用户'} (${membership} 会员)\n\n`);
     md.appendMarkdown(`---\n\n`);
 
-    if (remaining <= 0) {
-      md.appendMarkdown(`🐢 **当前模式**: **慢速队列模式** (高速配额已耗尽，请求免费排队)\n\n`);
+    if (exhausted) {
+      md.appendMarkdown(`🐢 **当前模式**: **慢速队列模式** (套餐内额度已用尽)\n\n`);
     } else {
-      md.appendMarkdown(`🚀 **当前模式**: **高速模式** (剩余 ${remaining.toLocaleString()} 次快速请求)\n\n`);
+      md.appendMarkdown(`🚀 **当前模式**: **高速模式** (套餐内用量已用 ${usedPct}%)\n\n`);
     }
 
-    md.appendMarkdown(`🔹 **Cursor Models (含 Grok & Composer)**: **${data.quota.autoPercentUsed || 100}% used**\n\n`);
-    md.appendMarkdown(`🔹 **Other Models (Claude 3.5 / GPT-4o 等)**: **${data.quota.apiPercentUsed || 100}% used**\n\n`);
-    md.appendMarkdown(`⚡ **快速请求总配额**: **${used.toLocaleString()}** / **${limit.toLocaleString()}** (已用 ${percentUsed}%)\n\n`);
+    md.appendMarkdown(`🔹 **套餐内用量 (Overview)**: **${usedPct}% used**\n\n`);
+    if (data.quota.hasCursorModelsPool) {
+      md.appendMarkdown(`🔹 **Cursor Models**: **${data.quota.autoPercentUsed ?? 0}% used**\n\n`);
+    } else {
+      md.appendMarkdown(`🔹 **Cursor Models**: 当前套餐不包含此配额池\n\n`);
+    }
+    if (data.quota.hasOtherModelsPool !== false) {
+      md.appendMarkdown(`🔹 **Other Models**: **${data.quota.apiPercentUsed ?? 0}% used**\n\n`);
+    }
+    if (hasNumericLimit) {
+      md.appendMarkdown(`⚡ **套餐额度**: **${used.toLocaleString()}** / **${limit.toLocaleString()}**\n\n`);
+    }
     if (data.quota.billingCycleEnd) {
       md.appendMarkdown(`⏳ **重置倒计时**: **${daysUntilReset} 天后重置** (${data.quota.billingCycleEnd})\n\n`);
     }
-    if (data.sandUsage && data.sandUsage.usagePercent > 0) {
-      md.appendMarkdown(`🤖 **每周配额 (Grok/思维)**: 已用 ${data.sandUsage.usagePercent}% (周重置)\n\n`);
+    if (data.sandUsage && data.sandUsage.included) {
+      md.appendMarkdown(`🤖 **Grok Bot 周额度**: 已用 ${data.sandUsage.usagePercent}% (每周重置，非编辑器 Grok 模型)\n\n`);
     }
     md.appendMarkdown(`---\n\n`);
     md.appendMarkdown(`📊 **今日实际消耗 Token**: **${todayTokens.toLocaleString()}**\n\n`);

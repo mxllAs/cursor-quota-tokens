@@ -354,6 +354,30 @@ body.vscode-light .account-tier.tier-enterprise {
   flex-direction: column;
 }
 
+.pool-item[hidden],
+.pool-unavailable[hidden] {
+  display: none !important;
+}
+
+.pool-item-sub {
+  margin-top: 14px;
+}
+
+.pool-unavailable {
+  margin-top: 12px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--bg-tile);
+  border: 1px dashed var(--border-card);
+  border-radius: 8px;
+}
+
+.progress-bar-hero {
+  height: 8px;
+}
+
 .pool-header {
   display: flex;
   align-items: center;
@@ -473,6 +497,14 @@ body.vscode-light .account-tier.tier-enterprise {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.card[hidden] {
+  display: none !important;
+}
+
+.grid-2col .pool-unavailable {
+  margin-top: 0;
 }
 
 .sub-card {

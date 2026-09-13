@@ -13,10 +13,16 @@
   const sectionQuotaTitle = document.getElementById('sectionQuotaTitle');
 
   const queueBadge = document.getElementById('queueBadge');
+  const includedPct = document.getElementById('includedPct');
+  const includedBar = document.getElementById('includedBar');
   const cursorModelPct = document.getElementById('cursorModelPct');
   const cursorModelBar = document.getElementById('cursorModelBar');
+  const cursorModelPool = document.getElementById('cursorModelPool');
+  const cursorModelUnavailable = document.getElementById('cursorModelUnavailable');
   const otherModelPct = document.getElementById('otherModelPct');
   const otherModelBar = document.getElementById('otherModelBar');
+  const otherModelPool = document.getElementById('otherModelPool');
+  const otherModelUnavailable = document.getElementById('otherModelUnavailable');
   const queueStatusBanner = document.getElementById('queueStatusBanner');
   const queueAlertTitle = document.getElementById('queueAlertTitle');
   const queueAlertDesc = document.getElementById('queueAlertDesc');
@@ -30,6 +36,9 @@
   const sandUsedVal = document.getElementById('sandUsedVal');
   const sandProgress = document.getElementById('sandProgress');
   const sandResetDate = document.getElementById('sandResetDate');
+  const sandCard = document.getElementById('sandCard');
+  const sandUnavailable = document.getElementById('sandUnavailable');
+  const sectionCycleTitle = document.getElementById('sectionCycleTitle');
 
   const todayCostBadge = document.getElementById('todayCostBadge');
   const todayTokens = document.getElementById('todayTokens');
@@ -105,6 +114,23 @@
     return (num || 0).toLocaleString();
   }
 
+  function usedPercentLabel(value) {
+    const n = Number(value);
+    const pct = Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+    return `${pct}% used`;
+  }
+
+  function barWidth(value) {
+    const n = Number(value);
+    const pct = Number.isFinite(n) ? n : 0;
+    return `${Math.min(100, Math.max(0, pct))}%`;
+  }
+
+  function setPoolVisible(poolEl, unavailableEl, visible) {
+    if (poolEl) poolEl.hidden = !visible;
+    if (unavailableEl) unavailableEl.hidden = visible;
+  }
+
   /**
    * Format membership tier with accurate display name and class
    */
@@ -161,16 +187,35 @@
     // 2. Quota Main Card (Included in Pro)
     if (data.quota) {
       const q = data.quota;
-      const autoPct = q.autoPercentUsed !== undefined ? q.autoPercentUsed : q.percentUsed;
-      const apiPct = q.apiPercentUsed !== undefined ? q.apiPercentUsed : q.percentUsed;
+      const totalPct = q.totalPercentUsed !== undefined ? q.totalPercentUsed : q.percentUsed;
+      const autoPct = q.autoPercentUsed !== undefined ? q.autoPercentUsed : totalPct;
+      const apiPct = q.apiPercentUsed !== undefined ? q.apiPercentUsed : totalPct;
 
-      cursorModelPct.textContent = `${autoPct}% used`;
-      cursorModelBar.style.width = `${Math.min(100, Math.max(0, autoPct))}%`;
+      if (includedPct) includedPct.textContent = usedPercentLabel(totalPct);
+      if (includedBar) includedBar.style.width = barWidth(totalPct);
 
-      otherModelPct.textContent = `${apiPct}% used`;
-      otherModelBar.style.width = `${Math.min(100, Math.max(0, apiPct))}%`;
+      const membership = String(data.profile?.membershipType || '').toLowerCase();
+      const hasCursorModelsPool = q.hasCursorModelsPool !== undefined
+        ? !!q.hasCursorModelsPool
+        : !(membership === 'free' || membership === 'hobby');
+      const hasOtherModelsPool = q.hasOtherModelsPool !== undefined
+        ? !!q.hasOtherModelsPool
+        : membership !== 'start';
 
-      const isSlow = q.isQueueSlow ?? (autoPct >= 100 && !q.onDemandEnabled);
+      setPoolVisible(cursorModelPool, cursorModelUnavailable, hasCursorModelsPool);
+      setPoolVisible(otherModelPool, otherModelUnavailable, hasOtherModelsPool);
+
+      if (hasCursorModelsPool) {
+        cursorModelPct.textContent = usedPercentLabel(autoPct);
+        cursorModelBar.style.width = barWidth(autoPct);
+      }
+
+      if (hasOtherModelsPool) {
+        otherModelPct.textContent = usedPercentLabel(apiPct);
+        otherModelBar.style.width = barWidth(apiPct);
+      }
+
+      const isSlow = q.isQueueSlow ?? (totalPct >= 100 && !q.onDemandEnabled);
 
       if (isSlow) {
         queueBadge.textContent = '慢速队列中';
@@ -202,8 +247,14 @@
       if (cycleProgress) cycleProgress.style.width = `${cycleProgPct}%`;
     }
 
-    // 3. Sand / Grok Weekly Quota
-    if (data.sandUsage) {
+    // 3. Grok Bot weekly quota (not the IDE Grok model)
+    const grokBotIncluded = !!(data.sandUsage && data.sandUsage.included);
+    if (sandCard) sandCard.hidden = !grokBotIncluded;
+    if (sandUnavailable) sandUnavailable.hidden = grokBotIncluded;
+    if (sectionCycleTitle) {
+      sectionCycleTitle.textContent = grokBotIncluded ? '周期与 Grok Bot 周配额' : '账单周期';
+    }
+    if (grokBotIncluded && data.sandUsage) {
       const s = data.sandUsage;
       const sPct = s.usagePercent || 0;
       sandPercentBadge.textContent = `${sPct}% 已用`;

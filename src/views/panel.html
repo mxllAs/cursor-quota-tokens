@@ -45,25 +45,42 @@
     <span id="queueBadge" class="status-pill pill-amber">慢速队列</span>
   </div>
 
-  <!-- Card: Included Quotas (Twin Bars 1:1 with Official Settings) -->
+  <!-- Card: Included Quotas (matches cursor.com Overview) -->
   <div class="card quota-main-card">
+    <div class="pool-item pool-item-hero">
+      <div class="pool-header">
+        <div class="pool-title">
+          <span class="dot dot-blue"></span>
+          <span class="pool-name">套餐内用量</span>
+        </div>
+        <span id="includedPct" class="pool-pct">0% used</span>
+      </div>
+      <div class="progress-bar-bg progress-bar-hero">
+        <div id="includedBar" class="progress-bar-fill fill-blue" style="width: 0%;"></div>
+      </div>
+      <div class="pool-hint" id="includedHint">与 cursor.com 设置页 Overview 的 Included usage 一致</div>
+    </div>
+
     <!-- Sub-pool 1: Cursor Models -->
-    <div class="pool-item">
+    <div id="cursorModelPool" class="pool-item pool-item-sub">
       <div class="pool-header">
         <div class="pool-title">
           <span class="dot dot-blue"></span>
           <span class="pool-name">Cursor Models</span>
         </div>
-        <span id="cursorModelPct" class="pool-pct">100% used</span>
+        <span id="cursorModelPct" class="pool-pct">0% used</span>
       </div>
       <div class="progress-bar-bg">
-        <div id="cursorModelBar" class="progress-bar-fill fill-blue" style="width: 100%;"></div>
+        <div id="cursorModelBar" class="progress-bar-fill fill-blue" style="width: 0%;"></div>
       </div>
-      <div class="pool-hint">超出限额将消耗第三方模型配额或进入慢速队列</div>
+      <div class="pool-hint">Auto / Composer / Grok 等 Cursor 模型分池</div>
+    </div>
+    <div id="cursorModelUnavailable" class="pool-unavailable" hidden>
+      当前套餐不包含 Cursor Models 配额池，进度条不展示。Grok / Composer 独立额度需 Pro、Pro+、Ultra 或 Start。
     </div>
 
     <!-- Sub-pool 2: Other Models -->
-    <div class="pool-item" style="margin-top: 14px;">
+    <div id="otherModelPool" class="pool-item pool-item-sub">
       <div class="pool-header">
         <div class="pool-title">
           <span class="dot dot-slate"></span>
@@ -74,7 +91,10 @@
       <div class="progress-bar-bg">
         <div id="otherModelBar" class="progress-bar-fill fill-slate" style="width: 100%;"></div>
       </div>
-      <div class="pool-hint">超出限额需开启按量付费 (On-Demand) 方可高速响应</div>
+      <div class="pool-hint">Claude / GPT 等第三方模型分池</div>
+    </div>
+    <div id="otherModelUnavailable" class="pool-unavailable" hidden>
+      当前套餐不包含 Other Models 配额池，进度条不展示。
     </div>
 
     <!-- Queue Status Alert Banner (Matches Cursor "Get faster responses" banner) -->
@@ -90,11 +110,11 @@
 
   <!-- Section 2: 周期与每周配额 -->
   <div class="section-title">
-    <span>周期与专项周配额</span>
+    <span id="sectionCycleTitle">周期与专项周配额</span>
   </div>
 
   <!-- Grid for Cycle & Sand -->
-  <div class="grid-2col">
+  <div class="grid-2col" id="cycleGrid">
     <!-- Card: 账单重置 -->
     <div class="card sub-card">
       <div class="card-mini-header">
@@ -114,23 +134,26 @@
       </div>
     </div>
 
-    <!-- Card: 每周配额 (Grok / Sand) -->
-    <div class="card sub-card">
+    <!-- Card: 每周配额 (Grok Bot, not the IDE Grok model) -->
+    <div id="sandCard" class="card sub-card">
       <div class="card-mini-header">
-        <span class="mini-title">⚡ 每周专项 (Grok/思维)</span>
-        <span id="sandPercentBadge" class="mini-badge badge-purple">9% 已用</span>
+        <span class="mini-title">⚡ Grok Bot 周额度</span>
+        <span id="sandPercentBadge" class="mini-badge badge-purple">0% 已用</span>
       </div>
       <div class="mini-hero">
-        <span id="sandUsedVal" class="mini-hero-num">9%</span>
+        <span id="sandUsedVal" class="mini-hero-num">0%</span>
         <span class="mini-hero-unit">周限额已消耗</span>
       </div>
       <div class="progress-bar-bg mini-bar">
-        <div id="sandProgress" class="progress-bar-fill fill-purple" style="width: 9%;"></div>
+        <div id="sandProgress" class="progress-bar-fill fill-purple" style="width: 0%;"></div>
       </div>
       <div class="mini-footer">
-        <span>类型: Grok/Sand 专属</span>
-        <span id="sandResetDate">刷新: 9月16日</span>
+        <span>独立产品，不是编辑器 Grok 模型</span>
+        <span id="sandResetDate">刷新: --</span>
       </div>
+    </div>
+    <div id="sandUnavailable" class="pool-unavailable" hidden>
+      当前套餐不包含 Grok Bot 每周额度。这不是编辑器里的 Grok 4.6，而是单独的 Grok Bot 产品，需 Pro / Teams 或绑定 SuperGrok。
     </div>
   </div>
 
