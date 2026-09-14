@@ -10,6 +10,10 @@
     "type": "git",
     "url": "https://github.com/mxllAs/cursor-quota-tokens.git"
   },
+  "bugs": {
+    "url": "https://github.com/mxllAs/cursor-quota-tokens/issues"
+  },
+  "homepage": "https://github.com/mxllAs/cursor-quota-tokens#readme",
   "engines": {
     "vscode": "^1.80.0"
   },
