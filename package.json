@@ -126,6 +126,7 @@
     }
   },
   "scripts": {
-    "package": "vsce package --no-dependencies"
+    "test": "node -c extension.js && node -c src/cursor_auth.js && node -c src/cursor_api.js && node -c src/token_aggregator.js && node -c src/status_bar.js && node -c src/webview_provider.js && node -c src/views/panel.js",
+    "package": "npx @vscode/vsce package --no-dependencies -o releases/"
   }
 }
