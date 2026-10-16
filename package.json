@@ -104,6 +104,11 @@
           "command": "cursorQuota.syncNow",
           "when": "view == cursorQuota.dashboard",
           "group": "navigation@2"
+        },
+        {
+          "command": "cursorQuota.configureSync",
+          "when": "view == cursorQuota.dashboard",
+          "group": "navigation@3"
         }
       ]
     },

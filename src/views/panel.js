@@ -85,6 +85,14 @@
     });
   }
 
+  // Cloud Sync Settings button click
+  const btnConfigSync = document.getElementById('btnConfigSync');
+  if (btnConfigSync) {
+    btnConfigSync.addEventListener('click', () => {
+      vscode.postMessage({ command: 'configureSync' });
+    });
+  }
+
   // Listen for messages from extension
   window.addEventListener('message', event => {
     const message = event.data;
