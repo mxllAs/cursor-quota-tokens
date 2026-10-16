@@ -2,7 +2,7 @@
   "name": "cursor-quota-tokens",
   "displayName": "Cursor Quota & Token Monitor (Cursor 配额与 Token 监控)",
   "description": "实时监控 Cursor 快速请求配额、重置倒计时、Grok/思维模型周额度以及分模型 Token 消耗（支持 GitHub 风格活跃度热力图）。Real-time monitor for Cursor fast requests, reset countdown, Grok/Sand weekly quota, and detailed token metrics.",
-  "version": "1.0.13",
+  "version": "1.3.0",
   "publisher": "isArray",
   "icon": "images/icon.png",
   "license": "MIT",
@@ -79,6 +79,18 @@
         "command": "cursorQuota.clearToken",
         "title": "清除已保存的会话令牌 (恢复自动检测)",
         "category": "Cursor 额度"
+      },
+      {
+        "command": "cursorQuota.syncNow",
+        "title": "立即同步 Token 数据到云端服务器",
+        "category": "Cursor 额度",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "cursorQuota.configureSync",
+        "title": "配置云端同步设置 (Sync Settings)",
+        "category": "Cursor 额度",
+        "icon": "$(gear)"
       }
     ],
     "menus": {
@@ -86,7 +98,12 @@
         {
           "command": "cursorQuota.refresh",
           "when": "view == cursorQuota.dashboard",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "cursorQuota.syncNow",
+          "when": "view == cursorQuota.dashboard",
+          "group": "navigation@2"
         }
       ]
     },
@@ -121,12 +138,48 @@
           "type": "number",
           "default": 15,
           "description": "配额余量低预警阈值百分比（低于此值状态栏变黄/变红）。"
+        },
+        "cursorQuota.sync.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否开启 Token 统计数据远程云端/服务器自动同步 (Enable remote sync)。"
+        },
+        "cursorQuota.sync.endpoint": {
+          "type": "string",
+          "default": "",
+          "description": "远程同步接口完整地址 (例如: http://localhost:9527/token-stats/sync 或 https://your-domain.com/api/token-stats/sync)。留空时若检测到 Antigravity 配置则可无缝复用。"
+        },
+        "cursorQuota.sync.secretKey": {
+          "type": "string",
+          "default": "",
+          "description": "数据同步鉴权密钥（与服务端环境变量 TOKEN_SYNC_SECRET 保持一致）。留空时若检测到 Antigravity 配置则可无缝复用。"
+        },
+        "cursorQuota.sync.intervalMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "description": "定时自动同步到服务器的间隔（分钟，最低 1 分钟，默认 10 分钟）。"
+        },
+        "cursorQuota.sync.mode": {
+          "type": "string",
+          "enum": [
+            "full",
+            "anonymized",
+            "public"
+          ],
+          "enumDescriptions": [
+            "完整模式：同步包含模型引擎名称与 Token 的完整数据",
+            "脱敏模式：自动将模型名称匿名化为 Model 1、Model 2 等",
+            "纯热力图模式：仅同步全量每日热力图与总消耗，完全不上传任何模型名"
+          ],
+          "default": "full",
+          "description": "远程同步的隐私数据模式。"
         }
       }
     }
   },
   "scripts": {
-    "test": "node -c extension.js && node -c src/cursor_auth.js && node -c src/cursor_api.js && node -c src/token_aggregator.js && node -c src/status_bar.js && node -c src/webview_provider.js && node -c src/views/panel.js",
+    "test": "node -c extension.js && node -c src/cursor_auth.js && node -c src/cursor_api.js && node -c src/token_aggregator.js && node -c src/status_bar.js && node -c src/webview_provider.js && node -c src/sync_client.js && node -c src/views/panel.js",
     "package": "npx @vscode/vsce package --no-dependencies -o releases/"
   }
 }

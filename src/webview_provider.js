@@ -84,6 +84,12 @@ class WebviewProvider {
       case 'refresh':
         await this.refreshAll(true, targetWebview);
         break;
+      case 'sync':
+        await vscode.commands.executeCommand('cursorQuota.syncNow');
+        break;
+      case 'configureSync':
+        await vscode.commands.executeCommand('cursorQuota.configureSync');
+        break;
     }
   }
 

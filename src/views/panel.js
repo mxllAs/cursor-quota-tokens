@@ -4,6 +4,8 @@
   // DOM Elements
   const btnRefresh = document.getElementById('btnRefresh');
   const refreshIcon = document.getElementById('refreshIcon');
+  const btnSync = document.getElementById('btnSync');
+  const syncIcon = document.getElementById('syncIcon');
 
   const userAvatar = document.getElementById('userAvatar');
   const avatarFallback = document.getElementById('avatarFallback');
@@ -75,6 +77,13 @@
       if (refreshIcon) refreshIcon.classList.remove('spinning');
     }, 4000);
   });
+
+  // Cloud Sync button click
+  if (btnSync) {
+    btnSync.addEventListener('click', () => {
+      vscode.postMessage({ command: 'sync' });
+    });
+  }
 
   // Listen for messages from extension
   window.addEventListener('message', event => {
@@ -303,6 +312,12 @@
         const color = MODEL_COLORS[idx % MODEL_COLORS.length];
         const row = document.createElement('div');
         row.className = 'model-row';
+        const tokLabel = m.totalTokens > 0
+          ? `${formatTokens(m.totalTokens)} tok`
+          : `${formatNumber(m.requestsCount)} 次调用 (沙盒)`;
+        const pctLabel = m.totalTokens > 0
+          ? `${m.percent}%`
+          : '沙盒';
         row.innerHTML = `
           <div class="model-info-row">
             <div class="model-left">
@@ -310,8 +325,8 @@
               <span class="model-title">${escapeHtml(m.name)}</span>
             </div>
             <div class="model-right">
-              <span class="model-tok">${formatTokens(m.totalTokens)} tok</span>
-              <span class="model-pct-text">${m.percent}%</span>
+              <span class="model-tok">${tokLabel}</span>
+              <span class="model-pct-text">${pctLabel}</span>
             </div>
           </div>
           <div class="model-bar-bg">
@@ -330,16 +345,18 @@
     // 7. Recent Requests Table
     if (data.recentEvents && Array.isArray(data.recentEvents)) {
       eventsTbody.innerHTML = '';
-      data.recentEvents.slice(0, 25).forEach(ev => {
+      data.recentEvents.slice(0, 30).forEach(ev => {
         const tr = document.createElement('tr');
+        const tokenDisplay = (!ev.isTokenBasedCall || ev.totalTokens === 0)
+          ? `<span style="color: var(--text-muted); font-size: 10px;">沙盒自动化 (免计Token)</span>`
+          : `<span style="color: var(--input-color);">${formatTokens(ev.inputTokens)}</span> / ` +
+            `<span style="color: var(--output-color);">${formatTokens(ev.outputTokens)}</span> / ` +
+            `<span style="color: var(--cache-color);">${formatTokens(ev.cacheTokens)}</span>`;
+
         tr.innerHTML = `
           <td style="color: var(--text-muted);">${ev.timeStr}</td>
           <td style="font-weight: 600;">${escapeHtml(ev.model)}</td>
-          <td>
-            <span style="color: var(--input-color);">${formatTokens(ev.inputTokens)}</span> /
-            <span style="color: var(--output-color);">${formatTokens(ev.outputTokens)}</span> /
-            <span style="color: var(--cache-color);">${formatTokens(ev.cacheTokens)}</span>
-          </td>
+          <td>${tokenDisplay}</td>
           <td style="color: #10b981; font-weight: 600;">${ev.costStr}</td>
         `;
         eventsTbody.appendChild(tr);
@@ -370,7 +387,8 @@
       const dateKey = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
       const dayData = dailyMap[dateKey];
       const tok = dayData ? dayData.totalTokens : 0;
-      if (tok > 0) {
+      const reqs = dayData ? dayData.requestsCount : 0;
+      if (tok > 0 || reqs > 0) {
         activeDays++;
         totalTokens += tok;
         if (tok > maxTokens) maxTokens = tok;
@@ -378,7 +396,8 @@
       daysList.push({
         date: dateKey,
         tokens: tok,
-        requests: dayData ? dayData.requestsCount : 0
+        requests: reqs,
+        botRequests: dayData ? (dayData.botRequestsCount || 0) : 0
       });
       curr.setDate(curr.getDate() + 1);
     }
@@ -399,11 +418,26 @@
         else if (ratio > 0.1) lvl = 2;
         else lvl = 1;
         cell.classList.add(`lvl-${lvl}`);
+      } else if (item.requests > 0) {
+        // Active day with bot/slow-mode calls
+        lvl = 1;
+        cell.classList.add(`lvl-${lvl}`);
       }
 
       cell.addEventListener('mouseenter', e => {
-        heatHoverDate.textContent = `${item.date}: ${formatNumber(item.tokens)} Tokens (${item.requests} 次会话)`;
-        heatmapTooltip.innerHTML = `<strong>${item.date}</strong><br/>${formatNumber(item.tokens)} Tokens<br/>${item.requests} 次请求`;
+        let tokInfo = '';
+        if (item.tokens > 0) {
+          tokInfo = `${formatTokens(item.tokens)} tok`;
+        } else if (item.requests > 0) {
+          tokInfo = '沙盒免Token';
+        } else {
+          tokInfo = '0 Tokens';
+        }
+
+        const reqInfo = item.requests > 0 ? `${item.requests} 次会话` : '无会话';
+        heatHoverDate.textContent = `${item.date}: ${tokInfo} (${reqInfo})`;
+
+        heatmapTooltip.innerHTML = `<strong>${item.date}</strong><br/>${tokInfo}<br/>${reqInfo}`;
         heatmapTooltip.style.opacity = '1';
         const rect = cell.getBoundingClientRect();
         heatmapTooltip.style.left = `${rect.left}px`;

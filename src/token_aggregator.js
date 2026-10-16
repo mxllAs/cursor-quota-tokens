@@ -65,7 +65,7 @@ class TokenAggregator {
       const sand = sandRes.status === 'fulfilled' ? sandRes.value : null;
       const currentPeriod = currentPeriodRes.status === 'fulfilled' ? currentPeriodRes.value : null;
 
-      // 2. Fetch recent usage events for today & recent history
+      // 2. Fetch recent usage events for today & 90-day history with smart multi-page fetching
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayStartMs = today.getTime();
@@ -76,16 +76,44 @@ class TokenAggregator {
       past90Days.setHours(0, 0, 0, 0);
       const past90DaysMs = past90Days.getTime();
 
-      // Fetch page 1 (up to 100 recent events)
-      const eventsRes = await this.api.getFilteredEvents({
+      // Fetch page 1 with max supported pageSize (1000)
+      const p1Res = await this.api.getFilteredEvents({
         startDate: past90DaysMs,
         endDate: now,
         page: 1,
-        pageSize: 100
+        pageSize: 1000
       });
 
-      const totalEventsCount = eventsRes?.totalUsageEventsCount || 0;
-      const events = eventsRes?.usageEventsDisplay || [];
+      const totalEventsCount = p1Res?.totalUsageEventsCount || 0;
+      let events = p1Res?.usageEventsDisplay || [];
+
+      // Check if we need to fetch deeper pages (2..5)
+      // When page 1 is full (1000 items) and the oldest event timestamp is newer than 90 days ago
+      const diskCache = this.loadDiskCache();
+      const cachedDailyCount = diskCache?.dailyMap ? Object.keys(diskCache.dailyMap).length : 0;
+      const needBackfill = forceRefresh || cachedDailyCount < 30;
+
+      if (events.length === 1000 && needBackfill) {
+        const oldestP1Ts = parseInt(events[events.length - 1].timestamp, 10);
+        if (oldestP1Ts > past90DaysMs) {
+          try {
+            const extraPages = await Promise.all([
+              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 2, pageSize: 1000 }),
+              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 3, pageSize: 1000 }),
+              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 4, pageSize: 1000 }),
+              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 5, pageSize: 1000 })
+            ]);
+            for (const ep of extraPages) {
+              const list = ep?.usageEventsDisplay || [];
+              if (list.length > 0) {
+                events = events.concat(list);
+              }
+            }
+          } catch (e) {
+            console.warn('[TokenAggregator] Fetching extra pages failed:', e.message);
+          }
+        }
+      }
 
       // 3. Aggregate statistics
       const todayStats = {
@@ -94,7 +122,8 @@ class TokenAggregator {
         cacheTokens: 0,
         totalTokens: 0,
         costCents: 0,
-        requestsCount: 0
+        requestsCount: 0,
+        botRequestsCount: 0
       };
 
       const monthStats = {
@@ -103,11 +132,42 @@ class TokenAggregator {
         cacheTokens: 0,
         totalTokens: 0,
         costCents: 0,
-        requestsCount: 0
+        requestsCount: 0,
+        botRequestsCount: 0
       };
 
       const modelMap = {};
       const dailyMap = {};
+
+      // Seed dailyMap with historical dates from disk cache if present
+      if (diskCache && diskCache.dailyMap) {
+        for (const [k, v] of Object.entries(diskCache.dailyMap)) {
+          dailyMap[k] = { ...v };
+        }
+      }
+
+      // Collect all dates that appear in the newly fetched events
+      const datesInEvents = new Set();
+      for (const ev of events) {
+        const ts = parseInt(ev.timestamp, 10);
+        const evDate = new Date(ts);
+        const dateKey = `${evDate.getFullYear()}-${String(evDate.getMonth() + 1).padStart(2, '0')}-${String(evDate.getDate()).padStart(2, '0')}`;
+        datesInEvents.add(dateKey);
+      }
+
+      // Reset the stats for dates in newly fetched events so they are accurately recalculated
+      for (const dk of datesInEvents) {
+        dailyMap[dk] = {
+          date: dk,
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheTokens: 0,
+          totalTokens: 0,
+          costCents: 0,
+          requestsCount: 0,
+          botRequestsCount: 0
+        };
+      }
 
       const nowMonth = new Date().getMonth();
       const nowYear = new Date().getFullYear();
@@ -123,10 +183,11 @@ class TokenAggregator {
         const costCents = ev.tokenUsage?.totalCents || 0;
         const total = input + output + cache;
 
+        const isBot = !ev.isTokenBasedCall || ev.model === 'grok-bot-automation';
+
         const rawModel = ev.model || 'default';
         const modelName = this.formatModelName(rawModel);
 
-        // Daily Heatmap map
         if (!dailyMap[dateKey]) {
           dailyMap[dateKey] = {
             date: dateKey,
@@ -135,7 +196,8 @@ class TokenAggregator {
             cacheTokens: 0,
             totalTokens: 0,
             costCents: 0,
-            requestsCount: 0
+            requestsCount: 0,
+            botRequestsCount: 0
           };
         }
         dailyMap[dateKey].inputTokens += input;
@@ -144,6 +206,9 @@ class TokenAggregator {
         dailyMap[dateKey].totalTokens += total;
         dailyMap[dateKey].costCents += costCents;
         dailyMap[dateKey].requestsCount += 1;
+        if (isBot) {
+          dailyMap[dateKey].botRequestsCount = (dailyMap[dateKey].botRequestsCount || 0) + 1;
+        }
 
         // Model breakdown
         if (!modelMap[modelName]) {
@@ -173,6 +238,9 @@ class TokenAggregator {
           todayStats.totalTokens += total;
           todayStats.costCents += costCents;
           todayStats.requestsCount += 1;
+          if (isBot) {
+            todayStats.botRequestsCount = (todayStats.botRequestsCount || 0) + 1;
+          }
         }
 
         // Current Month
@@ -183,11 +251,17 @@ class TokenAggregator {
           monthStats.totalTokens += total;
           monthStats.costCents += costCents;
           monthStats.requestsCount += 1;
+          if (isBot) {
+            monthStats.botRequestsCount = (monthStats.botRequestsCount || 0) + 1;
+          }
         }
       }
 
-      // Format models array
-      const modelsList = Object.values(modelMap).sort((a, b) => b.totalTokens - a.totalTokens);
+      // Format models array (sort models with tokens first, then by request count)
+      const modelsList = Object.values(modelMap).sort((a, b) => {
+        if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
+        return b.requestsCount - a.requestsCount;
+      });
       const grandTotalTokens = modelsList.reduce((acc, m) => acc + m.totalTokens, 0);
       for (const m of modelsList) {
         m.percent = grandTotalTokens > 0 ? ((m.totalTokens / grandTotalTokens) * 100).toFixed(1) : '0.0';
@@ -201,16 +275,19 @@ class TokenAggregator {
         const outTok = ev.tokenUsage?.outputTokens || 0;
         const cacheTok = ev.tokenUsage?.cacheReadTokens || 0;
         const costCents = ev.tokenUsage?.totalCents || 0;
+        const isBot = !ev.isTokenBasedCall || ev.model === 'grok-bot-automation';
         return {
           timestamp: ts,
           timeStr: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
           dateStr: `${d.getMonth() + 1}/${d.getDate()}`,
           model: this.formatModelName(ev.model || 'default'),
+          rawModel: ev.model || 'default',
+          isTokenBasedCall: !isBot,
           inputTokens: inTok,
           outputTokens: outTok,
           cacheTokens: cacheTok,
           totalTokens: inTok + outTok + cacheTok,
-          costStr: `$${(costCents / 100).toFixed(4)}`,
+          costStr: isBot ? '套餐沙盒' : `$${(costCents / 100).toFixed(4)}`,
           conversationId: ev.conversationId || ''
         };
       });
@@ -392,8 +469,10 @@ class TokenAggregator {
     if (!model) return 'Default';
     const m = model.toLowerCase();
     if (m === 'default') return 'Default (Composer/Agent)';
-    if (m.includes('claude-3-5-sonnet') || m.includes('claude-3.5-sonnet')) return 'Claude 3.5 Sonnet';
+    if (m.includes('grok-bot-automation')) return 'Grok Bot (沙盒/自动化)';
     if (m.includes('claude-3-7-sonnet') || m.includes('claude-3.7-sonnet')) return 'Claude 3.7 Sonnet';
+    if (m.includes('claude-3-5-sonnet') || m.includes('claude-3.5-sonnet')) return 'Claude 3.5 Sonnet';
+    if (m.includes('claude-3-5-haiku') || m.includes('claude-3.5-haiku')) return 'Claude 3.5 Haiku';
     if (m.includes('claude-3-opus')) return 'Claude 3 Opus';
     if (m.includes('gpt-4o-mini')) return 'GPT-4o Mini';
     if (m.includes('gpt-4o')) return 'GPT-4o';
@@ -407,6 +486,79 @@ class TokenAggregator {
     if (m.includes('gemini-1.5-pro')) return 'Gemini 1.5 Pro';
     if (m.includes('gemini-1.5-flash')) return 'Gemini 1.5 Flash';
     return model;
+  }
+
+  /**
+   * Prepares standard payload for remote cloud synchronization
+   * @param {'full'|'anonymized'|'public'} [mode='full']
+   * @returns {object} Payload matching SyncTokenStatsDto
+   */
+  exportDataForSync(mode = 'full') {
+    const data = this.cachedData || this.loadDiskCache() || {};
+    const dailyMap = data.dailyMap || {};
+    const models = data.models || [];
+
+    // Calculate all-time totals from dailyMap
+    let allTimeTokens = 0;
+    let totalTurns = 0;
+    const allDaily = [];
+
+    for (const [dateKey, dayData] of Object.entries(dailyMap)) {
+      const tok = dayData.totalTokens || 0;
+      const inTok = dayData.inputTokens || 0;
+      const outTok = dayData.outputTokens || 0;
+      const cacheTok = dayData.cacheTokens || 0;
+      const reqs = dayData.requestsCount || 0;
+
+      allTimeTokens += tok;
+      totalTurns += reqs;
+
+      allDaily.push({
+        date: dateKey,
+        total: tok,
+        input: inTok,
+        cached: cacheTok,
+        output: outTok,
+        thinking: 0,
+        turns: reqs,
+      });
+    }
+
+    allDaily.sort((a, b) => a.date.localeCompare(b.date));
+
+    const totalSessions = data.tokens?.totalCount || totalTurns;
+
+    const payload = {
+      version: 1,
+      updated_at: new Date().toISOString(),
+      source: 'cursor', // Fixed platform identifier
+      summary: {
+        all_time_tokens: allTimeTokens,
+        total_turns: totalTurns,
+        total_sessions: totalSessions,
+      },
+      all_daily: allDaily,
+    };
+
+    if (mode === 'public') {
+      return payload;
+    }
+
+    // Projects array mapped from models
+    let mIdx = 1;
+    const projects = models.map((m) => ({
+      name: mode === 'anonymized' ? `Model ${mIdx++}` : m.name,
+      total_tokens: m.totalTokens || 0,
+      input_tokens: m.inputTokens || 0,
+      cached_tokens: m.cacheTokens || 0,
+      output_tokens: m.outputTokens || 0,
+      thinking_tokens: 0,
+      sessions_count: m.requestsCount || 0,
+      is_archived: false,
+    }));
+
+    payload.projects = projects;
+    return payload;
   }
 }
 
