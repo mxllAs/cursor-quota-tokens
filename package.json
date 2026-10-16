@@ -159,21 +159,6 @@
           "default": 10,
           "minimum": 1,
           "description": "定时自动同步到服务器的间隔（分钟，最低 1 分钟，默认 10 分钟）。"
-        },
-        "cursorQuota.sync.mode": {
-          "type": "string",
-          "enum": [
-            "full",
-            "anonymized",
-            "public"
-          ],
-          "enumDescriptions": [
-            "完整模式：同步包含模型引擎名称与 Token 的完整数据",
-            "脱敏模式：自动将模型名称匿名化为 Model 1、Model 2 等",
-            "纯热力图模式：仅同步全量每日热力图与总消耗，完全不上传任何模型名"
-          ],
-          "default": "full",
-          "description": "远程同步的隐私数据模式。"
         }
       }
     }

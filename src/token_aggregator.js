@@ -490,13 +490,12 @@ class TokenAggregator {
 
   /**
    * Prepares standard payload for remote cloud synchronization
-   * @param {'full'|'anonymized'|'public'} [mode='full']
+   * Cursor only syncs all-time summary and daily heatmap, without project/model consumption.
    * @returns {object} Payload matching SyncTokenStatsDto
    */
-  exportDataForSync(mode = 'full') {
+  exportDataForSync() {
     const data = this.cachedData || this.loadDiskCache() || {};
     const dailyMap = data.dailyMap || {};
-    const models = data.models || [];
 
     // Calculate all-time totals from dailyMap
     let allTimeTokens = 0;
@@ -528,7 +527,7 @@ class TokenAggregator {
 
     const totalSessions = data.tokens?.totalCount || totalTurns;
 
-    const payload = {
+    return {
       version: 1,
       updated_at: new Date().toISOString(),
       source: 'cursor', // Fixed platform identifier
@@ -538,27 +537,8 @@ class TokenAggregator {
         total_sessions: totalSessions,
       },
       all_daily: allDaily,
+      projects: [], // 不上传项目或模型消耗
     };
-
-    if (mode === 'public') {
-      return payload;
-    }
-
-    // Projects array mapped from models
-    let mIdx = 1;
-    const projects = models.map((m) => ({
-      name: mode === 'anonymized' ? `Model ${mIdx++}` : m.name,
-      total_tokens: m.totalTokens || 0,
-      input_tokens: m.inputTokens || 0,
-      cached_tokens: m.cacheTokens || 0,
-      output_tokens: m.outputTokens || 0,
-      thinking_tokens: 0,
-      sessions_count: m.requestsCount || 0,
-      is_archived: false,
-    }));
-
-    payload.projects = projects;
-    return payload;
   }
 }
 

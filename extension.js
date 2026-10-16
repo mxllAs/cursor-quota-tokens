@@ -109,7 +109,7 @@ async function executeRemoteSync(context, aggregator, silent = false) {
     } catch (e) {}
   }
 
-  const payload = aggregator.exportDataForSync(mode);
+  const payload = aggregator.exportDataForSync();
 
   const doSync = async () => {
     const res = await pushTokenStatsToRemote(endpoint, secretKey, payload);
@@ -117,10 +117,9 @@ async function executeRemoteSync(context, aggregator, silent = false) {
       lastSyncTime = Date.now();
       if (!silent) {
         const daysCount = payload.all_daily?.length || 0;
-        const modelsCount = payload.projects?.length || 0;
         const totalTokens = payload.summary?.all_time_tokens || 0;
         vscode.window.showInformationMessage(
-          `Cursor Token 数据已成功同步到远程服务器！(共 ${daysCount} 天热力图，${modelsCount} 个模型，累计 ${formatTokensChinese(totalTokens)} tokens)`
+          `Cursor Token 数据已成功同步到远程服务器！(共 ${daysCount} 天热力图，累计 ${formatTokensChinese(totalTokens)} tokens)`
         );
       }
       return true;
@@ -182,11 +181,6 @@ async function configureSyncInteractive(context, aggregator) {
       action: 'toggle_enabled',
     },
     {
-      label: `$(eye) 数据隐私模式: ${syncConfig.mode}`,
-      description: '切换 full (完整模型) / anonymized (匿名模型) / public (纯热力图)',
-      action: 'set_mode',
-    },
-    {
       label: '$(debug-alt) 测试接口连接 (Test Connection)',
       description: '测试当前填写的接口地址与密钥是否可用',
       action: 'test_connection',
@@ -230,7 +224,7 @@ async function configureSyncInteractive(context, aggregator) {
             title: '正在测试接口连通性...',
           },
           async () => {
-            const payload = aggregator.exportDataForSync(syncConfig.mode);
+            const payload = aggregator.exportDataForSync();
             return await pushTokenStatsToRemote(cleanEndpoint, syncConfig.secretKey, payload, 8000);
           }
         );
@@ -283,22 +277,6 @@ async function configureSyncInteractive(context, aggregator) {
     return;
   }
 
-  if (selection.action === 'set_mode') {
-    const modes = [
-      { label: 'full', description: '完整模式：同步包含模型引擎名称与 Token 的完整数据' },
-      { label: 'anonymized', description: '脱敏模式：自动将模型名称匿名化为 Model 1、Model 2 等' },
-      { label: 'public', description: '纯热力图模式：仅同步全量每日热力图与总消耗，完全不上传任何模型名' },
-    ];
-    const pickedMode = await vscode.window.showQuickPick(modes, {
-      placeHolder: '选择远程同步的隐私数据模式',
-    });
-    if (pickedMode) {
-      await config.update('sync.mode', pickedMode.label, vscode.ConfigurationTarget.Global);
-      vscode.window.showInformationMessage(`隐私模式已设置为: ${pickedMode.label}`);
-    }
-    return;
-  }
-
   if (selection.action === 'test_connection') {
     if (!syncConfig.endpoint) {
       vscode.window.showWarningMessage('尚未配置接口地址，无法测试连接。');
@@ -311,7 +289,7 @@ async function configureSyncInteractive(context, aggregator) {
         title: `正在测试连接到 ${syncConfig.endpoint}...`,
       },
       async () => {
-        const payload = aggregator.exportDataForSync(syncConfig.mode);
+        const payload = aggregator.exportDataForSync();
         return await pushTokenStatsToRemote(syncConfig.endpoint, syncConfig.secretKey, payload, 8000);
       }
     );
