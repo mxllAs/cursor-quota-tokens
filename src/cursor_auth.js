@@ -1,12 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 class CursorAuth {
   constructor(context) {
     this.context = context;
     this.cachedSession = null;
+    this.windowsMasterKey = null;
   }
 
   /**
@@ -43,6 +45,57 @@ class CursorAuth {
   }
 
   /**
+   * Decrypt Electron safeStorage encrypted tokens (e.g. cursor-safe-storage:v1:...)
+   */
+  decryptSafeStorage(val) {
+    if (!val || typeof val !== 'string' || !val.startsWith('cursor-safe-storage:v1:')) {
+      return val;
+    }
+
+    try {
+      const platform = os.platform();
+      if (platform === 'win32') {
+        let masterKey = this.windowsMasterKey;
+        if (!masterKey) {
+          const localStatePath = path.join(os.homedir(), 'AppData', 'Roaming', 'Cursor', 'Local State');
+          if (fs.existsSync(localStatePath)) {
+            const localState = JSON.parse(fs.readFileSync(localStatePath, 'utf-8'));
+            const encKeyB64 = localState?.os_crypt?.encrypted_key;
+            if (encKeyB64) {
+              const psCmd = `Add-Type -AssemblyName System.Security; $b = [Convert]::FromBase64String('${encKeyB64}'); [Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Unprotect($b[5..($b.Length-1)], $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))`;
+              const outB64 = execSync(`powershell -NoProfile -Command "${psCmd}"`, { timeout: 4000, encoding: 'utf-8' }).trim();
+              if (outB64) {
+                masterKey = Buffer.from(outB64, 'base64');
+                this.windowsMasterKey = masterKey;
+              }
+            }
+          }
+        }
+
+        if (masterKey) {
+          const rawB64 = val.slice('cursor-safe-storage:v1:'.length);
+          const buf = Buffer.from(rawB64, 'base64');
+          // 'v10' (3 bytes) + nonce (12 bytes) + ciphertext + tag (16 bytes)
+          const nonce = buf.subarray(3, 15);
+          const ciphertext = buf.subarray(15, buf.length - 16);
+          const tag = buf.subarray(buf.length - 16);
+
+          const decipher = crypto.createDecipheriv('aes-256-gcm', masterKey, nonce);
+          decipher.setAuthTag(tag);
+          const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf-8');
+          if (decrypted && decrypted.includes('.')) {
+            return decrypted;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[CursorAuth] Failed to decrypt safe-storage token:', e.message);
+    }
+
+    return val;
+  }
+
+  /**
    * Read raw accessToken from state.vscdb using multi-engine fallback
    */
   async getRawToken() {
@@ -51,7 +104,7 @@ class CursorAuth {
       try {
         const manual = await this.context.secrets.get('cursor_session_token');
         if (manual && manual.trim()) {
-          return manual.trim();
+          return this.decryptSafeStorage(manual.trim());
         }
       } catch (e) {
         // ignore
@@ -70,7 +123,7 @@ class CursorAuth {
       const row = db.prepare("SELECT value FROM ItemTable WHERE key = 'cursorAuth/accessToken'").get();
       db.close();
       if (row && row.value) {
-        return row.value;
+        return this.decryptSafeStorage(row.value);
       }
     } catch (e) {
       // node:sqlite not available or failed
@@ -81,7 +134,7 @@ class CursorAuth {
       const script = `import sqlite3, os; conn = sqlite3.connect('file:' + os.path.expandvars(r'${dbPath.replace(/\\/g, '\\\\')}') + '?mode=ro', uri=True); cur = conn.cursor(); cur.execute("SELECT value FROM ItemTable WHERE key = 'cursorAuth/accessToken'"); r = cur.fetchone(); conn.close(); print(r[0] if r else '')`;
       const out = execSync(`python -c "${script}"`, { timeout: 4000, encoding: 'utf-8' }).trim();
       if (out) {
-        return out;
+        return this.decryptSafeStorage(out);
       }
     } catch (e) {
       // Python not available
@@ -94,7 +147,7 @@ class CursorAuth {
         encoding: 'utf-8'
       }).trim();
       if (out) {
-        return out;
+        return this.decryptSafeStorage(out);
       }
     } catch (e) {
       // sqlite3 cli failed
@@ -104,7 +157,7 @@ class CursorAuth {
   }
 
   /**
-   * Decode JWT payload and extract userId
+   * Decode JWT payload and extract userId, with database fallback
    */
   extractUserId(token) {
     if (!token) return null;
@@ -138,6 +191,24 @@ class CursorAuth {
     } catch (e) {
       console.error('[CursorAuth] Failed to decode JWT payload:', e);
     }
+
+    // Fallback: check state.vscdb for stripeMembershipAuthId or cachedScopedProfile
+    const dbPath = this.getDatabasePath();
+    if (fs.existsSync(dbPath)) {
+      try {
+        const { DatabaseSync } = require('node:sqlite');
+        const db = new DatabaseSync(dbPath, { readOnly: true });
+        const row = db.prepare("SELECT value FROM ItemTable WHERE key IN ('cursorAuth/stripeMembershipAuthId', 'cursorAuth/cachedScopedProfile') AND value LIKE '%user_%' LIMIT 1").get();
+        db.close();
+        if (row && row.value) {
+          const match = row.value.match(/user_[A-Za-z0-9]+/);
+          if (match) {
+            return match[0];
+          }
+        }
+      } catch (e) {}
+    }
+
     return null;
   }
 

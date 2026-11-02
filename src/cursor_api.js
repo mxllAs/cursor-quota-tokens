@@ -33,6 +33,7 @@ class CursorApi {
             'Content-Type': 'application/json',
             'Cookie': session.cookieHeader,
             'Origin': 'https://cursor.com',
+            'Referer': 'https://cursor.com/settings',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
           },
           timeout: 12000

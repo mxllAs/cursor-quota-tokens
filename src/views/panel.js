@@ -66,7 +66,7 @@
   const eventsTbody = document.getElementById('eventsTbody');
 
   const MODEL_COLORS = [
-    '#38bdf8', '#818cf8', '#a855f7', '#ec4899', '#f97316', '#22c55e', '#eab308', '#06b6d4'
+    '#38bdf8', '#818cf8', '#a855f7', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4'
   ];
 
   // Refresh button click
@@ -311,12 +311,12 @@
       }
     }
 
-    // 5. Models Distribution
+    // 5. Models Distribution (Top 10)
     if (data.models && Array.isArray(data.models)) {
-      totalEventsCount.textContent = `累计记录 ${formatNumber(data.tokens?.totalCount || 0)} 次`;
+      totalEventsCount.textContent = `累计记录 ${formatNumber(data.tokens?.totalCount || 0)} 次 (Top 10)`;
       modelsList.innerHTML = '';
 
-      data.models.forEach((m, idx) => {
+      data.models.slice(0, 10).forEach((m, idx) => {
         const color = MODEL_COLORS[idx % MODEL_COLORS.length];
         const row = document.createElement('div');
         row.className = 'model-row';
@@ -355,14 +355,17 @@
       eventsTbody.innerHTML = '';
       data.recentEvents.slice(0, 30).forEach(ev => {
         const tr = document.createElement('tr');
-        const tokenDisplay = (!ev.isTokenBasedCall || ev.totalTokens === 0)
+        const hasTokens = (ev.totalTokens || (ev.inputTokens + ev.outputTokens + ev.cacheTokens)) > 0;
+        const tokenDisplay = !hasTokens
           ? `<span style="color: var(--text-muted); font-size: 10px;">沙盒自动化 (免计Token)</span>`
           : `<span style="color: var(--input-color);">${formatTokens(ev.inputTokens)}</span> / ` +
             `<span style="color: var(--output-color);">${formatTokens(ev.outputTokens)}</span> / ` +
             `<span style="color: var(--cache-color);">${formatTokens(ev.cacheTokens)}</span>`;
 
+        const displayTime = ev.dateStr ? `${ev.dateStr} ${ev.timeStr}` : ev.timeStr;
+
         tr.innerHTML = `
-          <td style="color: var(--text-muted);">${ev.timeStr}</td>
+          <td style="color: var(--text-muted); font-size: 11px;">${displayTime}</td>
           <td style="font-weight: 600;">${escapeHtml(ev.model)}</td>
           <td>${tokenDisplay}</td>
           <td style="color: #10b981; font-weight: 600;">${ev.costStr}</td>

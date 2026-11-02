@@ -87,31 +87,24 @@ class TokenAggregator {
       const totalEventsCount = p1Res?.totalUsageEventsCount || 0;
       let events = p1Res?.usageEventsDisplay || [];
 
-      // Check if we need to fetch deeper pages (2..5)
-      // When page 1 is full (1000 items) and the oldest event timestamp is newer than 90 days ago
-      const diskCache = this.loadDiskCache();
-      const cachedDailyCount = diskCache?.dailyMap ? Object.keys(diskCache.dailyMap).length : 0;
-      const needBackfill = forceRefresh || cachedDailyCount < 30;
-
-      if (events.length === 1000 && needBackfill) {
-        const oldestP1Ts = parseInt(events[events.length - 1].timestamp, 10);
-        if (oldestP1Ts > past90DaysMs) {
-          try {
-            const extraPages = await Promise.all([
-              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 2, pageSize: 1000 }),
-              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 3, pageSize: 1000 }),
-              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 4, pageSize: 1000 }),
-              this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: 5, pageSize: 1000 })
-            ]);
-            for (const ep of extraPages) {
-              const list = ep?.usageEventsDisplay || [];
-              if (list.length > 0) {
-                events = events.concat(list);
-              }
+      // Fetch all pages needed to cover full 90-day history (up to 8 pages / 8000 events)
+      if (totalEventsCount > events.length) {
+        const totalPages = Math.min(8, Math.ceil(totalEventsCount / 1000));
+        const extraPromises = [];
+        for (let p = 2; p <= totalPages; p++) {
+          extraPromises.push(
+            this.api.getFilteredEvents({ startDate: past90DaysMs, endDate: now, page: p, pageSize: 1000 })
+          );
+        }
+        try {
+          const extraResults = await Promise.allSettled(extraPromises);
+          for (const res of extraResults) {
+            if (res.status === 'fulfilled' && res.value?.usageEventsDisplay) {
+              events = events.concat(res.value.usageEventsDisplay);
             }
-          } catch (e) {
-            console.warn('[TokenAggregator] Fetching extra pages failed:', e.message);
           }
+        } catch (e) {
+          console.warn('[TokenAggregator] Fetching extra pages failed:', e.message);
         }
       }
 
@@ -138,6 +131,7 @@ class TokenAggregator {
 
       const modelMap = {};
       const dailyMap = {};
+      const diskCache = this.loadDiskCache();
 
       // Seed dailyMap with historical dates from disk cache if present
       if (diskCache && diskCache.dailyMap) {
@@ -386,7 +380,7 @@ class TokenAggregator {
           month: monthStats,
           totalCount: totalEventsCount
         },
-        models: modelsList,
+        models: modelsList.slice(0, 10),
         dailyMap,
         recentEvents
       };
@@ -401,6 +395,31 @@ class TokenAggregator {
       // Fallback to disk cache if available
       const disk = this.loadDiskCache();
       if (disk) {
+        // Prevent stale past day data from masquerading as today's activity
+        const nowD = new Date();
+        const todayDateKey = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-${String(nowD.getDate()).padStart(2, '0')}`;
+        const dayInCache = disk.dailyMap?.[todayDateKey];
+        if (dayInCache) {
+          disk.tokens.today = {
+            inputTokens: dayInCache.inputTokens || 0,
+            outputTokens: dayInCache.outputTokens || 0,
+            cacheTokens: dayInCache.cacheTokens || 0,
+            totalTokens: dayInCache.totalTokens || 0,
+            costCents: dayInCache.costCents || 0,
+            requestsCount: dayInCache.requestsCount || 0,
+            botRequestsCount: dayInCache.botRequestsCount || 0
+          };
+        } else {
+          disk.tokens.today = {
+            inputTokens: 0,
+            outputTokens: 0,
+            cacheTokens: 0,
+            totalTokens: 0,
+            costCents: 0,
+            requestsCount: 0,
+            botRequestsCount: 0
+          };
+        }
         return disk;
       }
       throw e;
